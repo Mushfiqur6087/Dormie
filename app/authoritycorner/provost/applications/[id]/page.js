@@ -17,7 +17,7 @@ export default function ProvostApplicationDetailPage() {
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const IMAGE_BASE_URL = 'http://localhost:8080/uploads/';
+  const IMAGE_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/uploads/`;
 
   const fetchApplicationDetails = useCallback(async () => {
     // Only attempt to fetch if ID is available (useParams might return undefined initially)
@@ -38,7 +38,7 @@ export default function ProvostApplicationDetailPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/applications/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/applications/${id}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${jwtToken}`,
@@ -81,7 +81,7 @@ export default function ProvostApplicationDetailPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/applications/${id}/${actionType}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/applications/${id}/${actionType}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${jwtToken}`,

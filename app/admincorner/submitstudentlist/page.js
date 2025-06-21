@@ -15,10 +15,10 @@ export default function AdminStudentBatchUpload() {
   const [failedRecords, setFailedRecords] = useState(0);
   const [errorMessage, setErrorMessage] = useState(''); // To show general errors
 
-  // Common password for all new students
-  const COMMON_PASSWORD = "12345678";
-  // All students created via this endpoint will have the "STUDENT" role
-  const DEFAULT_ROLE = "STUDENT"; 
+  // Common password for all new students - from environment variable
+  const COMMON_PASSWORD = process.env.NEXT_PUBLIC_DEFAULT_STUDENT_PASSWORD || "12345678";
+  // All students created via this endpoint will have the "STUDENT" role - from environment variable
+  const DEFAULT_ROLE = process.env.NEXT_PUBLIC_DEFAULT_STUDENT_ROLE || "STUDENT"; 
 
   const handleFileChange = (e) => {
     setErrorMessage(''); // Clear previous errors
@@ -128,7 +128,7 @@ export default function AdminStudentBatchUpload() {
           }
 
           try {
-            const response = await fetch('http://localhost:8080/api/auth/admin/signup', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/admin/signup`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

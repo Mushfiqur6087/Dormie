@@ -59,7 +59,7 @@ export default function ApplyForm() {
     async function fetchDistricts() {
       try {
         setLoadingDistricts(true);
-        const response = await fetch('https://bdapi.vercel.app/api/v.1/district');
+        const response = await fetch(process.env.NEXT_PUBLIC_BANGLADESH_DISTRICTS_API || 'https://bdapi.vercel.app/api/v.1/district');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -257,7 +257,7 @@ export default function ApplyForm() {
 
     try {
       // Replace with your actual backend URL and the new endpoint path
-      const response = await fetch('http://localhost:8080/api/applications/seat', { // This is your new backend endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/applications/seat`, { // This is your new backend endpoint
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${jwtToken}`, // Attach JWT for authentication

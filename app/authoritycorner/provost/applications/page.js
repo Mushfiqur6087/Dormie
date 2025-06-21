@@ -31,7 +31,7 @@ export default function ProvostApplicationListPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/applications/all-summaries?sortBy=${sortBy}&sortOrder=${sortOrder}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/applications/all-summaries?sortBy=${sortBy}&sortOrder=${sortOrder}`,
         {
           method: 'GET',
           headers: {
