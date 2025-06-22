@@ -1,11 +1,11 @@
 // app/authoritycorner/provost/applications/page.jsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation'; // useRouter for navigation, useSearchParams for sort params
 import Link from 'next/link'; // For linking to detail page
 
-export default function ProvostApplicationListPage() {
+function ProvostApplicationList() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -197,5 +197,23 @@ export default function ProvostApplicationListPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Loading component for Suspense fallback
+function ApplicationsLoading() {
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="text-xl font-semibold text-gray-700">Loading applications...</div>
+    </div>
+  );
+}
+
+// Main component wrapped with Suspense
+export default function ProvostApplicationListPage() {
+  return (
+    <Suspense fallback={<ApplicationsLoading />}>
+      <ProvostApplicationList />
+    </Suspense>
   );
 }
