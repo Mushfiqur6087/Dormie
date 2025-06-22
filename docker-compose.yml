@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: ghcr.io/mushfiqur6087/hms-frontend:latest
+    container_name: hms-frontend
+    depends_on: 
+      - backend
+    ports:
+      - "80:3000"           # expose port 80 publicly
+    env_file:
+      - .env                # runtime envs (NEXT_PUBLIC_API_URL)
+    networks: 
+      - hms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Placeholder for backend service
+  # This should be defined in your backend's docker-compose file
+  # or you can uncomment and modify the following section
+  # backend:
+  #   image: ghcr.io/mushfiqur6087/hms-backend:latest
+  #   container_name: hms-backend
+  #   ports:
+  #     - "8000:8000"
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - hms-network
+  #   restart: unless-stopped
+
+networks:
+  hms-network:
+    driver: bridge
+    external: true  # Set to false if the network should be created by this compose file
