@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    console.log(`${process.env.NEXT_PUBLIC_API_URL}`)
      try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/signin`, {
         method: 'POST',
