@@ -1,0 +1,35 @@
+name: Deploy Frontend to Azure VM
+
+# ──────────────────────
+# Fire only when the *frontend* image has just been built & pushed
+# ──────────────────────
+on:
+  workflow_run:
+    workflows: ["Build & Push Frontend"]   # ← the build workflow’s name
+    types: [completed]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── SSH into the VM and roll out the new image ──────────────────────────
+      - name: Pull image & restart frontend container
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host:      ${{ secrets.VM_IP }}         # 172.187.160.142
+          username:  azureuser                    # VM user
+          key:       ${{ secrets.VM_SSH_KEY }}    # private key you stored
+          script: |
+            # 1) authenticate to GHCR (token has write+read)
+            docker login ghcr.io -u mushfiqur6087 -p ${{ secrets.CR_PAT }}
+
+            # 2) move to unified stack directory
+            cd ~/app
+
+            # 3) pull only the updated service image
+            docker compose pull frontend
+
+            # 4) recreate *just* the frontend container (others stay running)
+            docker compose up -d frontend
