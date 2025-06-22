@@ -61,8 +61,5 @@ pids
 # Optional eslint cache
 .eslintcache
 
-# Package managers
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# Environment variables
 .env
