@@ -26,7 +26,7 @@ async function handleSubmit(e) {
   e.preventDefault();
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/register`, {
+    const response = await fetch(`http://172.187.160.142:8080/users/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

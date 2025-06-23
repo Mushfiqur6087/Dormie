@@ -13,9 +13,9 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(`${process.env.NEXT_PUBLIC_API_URL}`)
+    console.log(`http://172.187.160.142:8080`)
      try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/signin`, {
+      const res = await fetch(`http://172.187.160.142:8080/api/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: password }), // Corrected payload

@@ -36,7 +36,7 @@ export default function MyDues() {
     try {
       // --- Step 1: Fetch Hall Fees for the authenticated user ---
       console.log("Fetching Hall Fees for userId:", userId);
-      const hallFeesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/student-hall-fees/user/${userId}`, {
+      const hallFeesRes = await fetch(`http://172.187.160.142:8080/api/student-hall-fees/user/${userId}`, {
         method: 'GET',
         headers: authHeaders,
       });
@@ -63,7 +63,7 @@ export default function MyDues() {
 
       // --- Step 2: Fetch Dining Fees for the authenticated user ---
       console.log("Fetching Dining Fees for userId:", userId);
-      const diningFeesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/student-dining-fees/user/${userId}`, {
+      const diningFeesRes = await fetch(`http://172.187.160.142:8080/api/student-dining-fees/user/${userId}`, {
         method: 'GET',
         headers: authHeaders,
       });
@@ -132,7 +132,7 @@ export default function MyDues() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/initiate`, {
+      const response = await fetch(`http://172.187.160.142:8080/payment/initiate`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

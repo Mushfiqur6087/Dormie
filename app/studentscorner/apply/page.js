@@ -257,7 +257,7 @@ export default function ApplyForm() {
 
     try {
       // Replace with your actual backend URL and the new endpoint path
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/applications/seat`, { // This is your new backend endpoint
+      const response = await fetch(`http://172.187.160.142:8080/api/applications/seat`, { // This is your new backend endpoint
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${jwtToken}`, // Attach JWT for authentication

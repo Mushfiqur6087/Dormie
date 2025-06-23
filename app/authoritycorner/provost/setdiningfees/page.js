@@ -40,7 +40,7 @@ export default function SetDiningFees() {
       };
 
       console.log('Sending Dining Fee:', diningFeeData);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dining-fees`, {
+      const res = await fetch(`http://172.187.160.142:8080/api/dining-fees`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(diningFeeData),

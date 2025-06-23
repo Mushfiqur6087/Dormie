@@ -128,7 +128,7 @@ export default function AdminStudentBatchUpload() {
           }
 
           try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/admin/signup`, {
+            const response = await fetch(`http://172.187.160.142:8080/api/auth/admin/signup`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

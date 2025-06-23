@@ -45,7 +45,7 @@ export default function SetHallFees() {
       };
 
       console.log('Sending Attached Fee:', attachedFeeData);
-      const attachedRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hall-fees`, {
+      const attachedRes = await fetch(`http://172.187.160.142:8080/api/hall-fees`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(attachedFeeData),
@@ -67,7 +67,7 @@ export default function SetHallFees() {
       };
 
       console.log('Sending Resident Fee:', residentFeeData);
-      const residentRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hall-fees`, {
+      const residentRes = await fetch(`http://172.187.160.142:8080/api/hall-fees`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(residentFeeData),

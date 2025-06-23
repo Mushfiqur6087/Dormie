@@ -31,7 +31,7 @@ function ProvostApplicationList() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/applications/all-summaries?sortBy=${sortBy}&sortOrder=${sortOrder}`,
+        `http://172.187.160.142:8080/api/applications/all-summaries?sortBy=${sortBy}&sortOrder=${sortOrder}`,
         {
           method: 'GET',
           headers: {
