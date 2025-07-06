@@ -50,8 +50,11 @@ jobs:
           
       - name: Clean up existing deployment
         run: |
-          # Stop and remove any existing containers
-          docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
+          # Stop and remove any existing containers (but keep volumes for data persistence)
+          docker compose -f docker-compose.prod.yml down --remove-orphans || true
+          
+          # Clean up any nginx-related volumes that might be causing conflicts
+          docker volume ls -q | grep -E "(nginx|conf)" | xargs -r docker volume rm || true
           
           # Stop the old hms-postgres container that's conflicting
           docker stop hms-postgres || true
@@ -72,15 +75,6 @@ jobs:
         run: |
           export DB_PASSWORD="$DB_PASSWORD"
           export JWT_SECRET="$JWT_SECRET"
-          
-          # Ensure nginx config is correct
-          echo "Contents of nginx directory:"
-          ls -la ./nginx/
-          echo "Content of nginx/default.conf:"
-          head -10 ./nginx/default.conf
-          
-          # Remove any cached nginx volumes
-          docker volume ls | grep nginx | awk '{print $2}' | xargs -r docker volume rm || true
           
           docker compose -f docker-compose.prod.yml up --build -d
 
