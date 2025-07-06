@@ -1,0 +1,63 @@
+# docker-compose.prod.yml
+services:
+# ─────────────────────────── DATABASE ───────────────────────────
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hms_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}      # ← inject from GitHub Secret
+      POSTGRES_DB: hmsdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hms_user -d hmsdb"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped                 # safe for prod
+
+# ─────────────────────────── BACKEND (Spring) ───────────────────
+  backend:
+    build:
+      context: ./Dormie-Backend
+      target: prod                          # use runtime stage
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL:      jdbc:postgresql://db:5432/hmsdb
+      SPRING_DATASOURCE_USERNAME: hms_user
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET:  ${JWT_SECRET}            # from GitHub Secret
+      # optional override:
+      # JWT_EXPIRATION_MS: 86400000
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+# ─────────────────────────── FRONTEND build  ────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dormie-Frontend/Dockerfile
+      target: prod
+      args:
+        VITE_API_URL: /api                  # baked into JS bundle
+    depends_on: [ backend ]
+    restart: unless-stopped
+
+# ─────────────────────────── NGINX (serves + proxy) ─────────────
+  nginx:
+    build:
+      context: .
+      dockerfile: Dormie-Frontend/Dockerfile
+      target: prod
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

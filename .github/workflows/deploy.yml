@@ -1,0 +1,58 @@
+name: Deploy to Azure VM
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AZ_HOST:       ${{ secrets.AZURE_VM_HOST }}
+      AZ_USER:       ${{ secrets.AZURE_VM_USER }}
+      DB_PASSWORD:   ${{ secrets.DB_PASSWORD }}
+      JWT_SECRET:    ${{ secrets.JWT_SECRET }}
+
+    steps:
+      # 1. Checkout repo
+      - uses: actions/checkout@v4
+
+      # 2. Enable Buildx (needed for multi-stage build caching)
+      - uses: docker/setup-buildx-action@v3
+
+      # 3. Load SSH key for VM
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
+
+      # 4. Trust VM fingerprint
+      - name: Add VM to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$AZ_HOST" >> ~/.ssh/known_hosts
+
+      # 5. Point Docker CLI at VM over SSH
+      - name: Create remote Docker context
+        run: |
+          docker context create azure --docker "host=ssh://$AZ_USER@$AZ_HOST"
+          docker context use azure
+
+      # 6. Build images & start stack on VM
+      - name: Build and deploy
+        run: |
+          export DB_PASSWORD="$DB_PASSWORD"
+          export JWT_SECRET="$JWT_SECRET"
+          docker compose -f docker-compose.prod.yml down || true
+          docker compose -f docker-compose.prod.yml up --build -d
+
+      # 7. Show container status
+      - name: docker compose ps
+        run: docker compose -f docker-compose.prod.yml ps
+
+      # 8. Always clean up context
+      - name: Reset Docker context
+        if: always()
+        run: |
+          docker context use default
+          docker context rm azure
