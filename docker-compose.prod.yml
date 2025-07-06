@@ -39,4 +39,14 @@ services:
       dockerfile: Dockerfile
       target: prod                      # prod stage copies dist + nginx conf
       args:
-        VITE
+        VITE_API_URL: /api              # baked into JS bundle
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
