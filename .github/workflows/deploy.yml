@@ -53,9 +53,17 @@ jobs:
           # Stop and remove any existing containers
           docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
           
+          # Stop the old hms-postgres container that's conflicting
+          docker stop hms-postgres || true
+          docker rm hms-postgres || true
+          
           # Remove any containers that might be using port 80
           docker ps -q --filter "publish=80" | xargs -r docker stop || true
           docker ps -aq --filter "publish=80" | xargs -r docker rm || true
+          
+          # Remove any containers that might be using port 5432 (postgres)
+          docker ps -q --filter "publish=5432" | xargs -r docker stop || true
+          docker ps -aq --filter "publish=5432" | xargs -r docker rm || true
           
           # Clean up any dangling containers
           docker container prune -f || true
@@ -70,7 +78,20 @@ jobs:
       - name: docker compose ps
         run: docker compose -f docker-compose.prod.yml ps
 
-      # 8. Always clean up context
+      # 8. Check nginx logs if it's failing
+      - name: Check nginx logs
+        run: |
+          echo "Checking nginx container logs:"
+          docker compose -f docker-compose.prod.yml logs nginx || true
+          
+      # 9. Show all container logs for debugging
+      - name: Show all container logs
+        if: failure()
+        run: |
+          echo "=== All container logs ==="
+          docker compose -f docker-compose.prod.yml logs || true
+
+      # 10. Always clean up context
       - name: Reset Docker context
         if: always()
         run: |
