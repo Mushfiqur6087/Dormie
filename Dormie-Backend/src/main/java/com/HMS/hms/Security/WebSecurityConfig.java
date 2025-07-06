@@ -64,9 +64,9 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/auth/signin").permitAll()
                         .requestMatchers("/api/auth/admin/signup").hasRole("ADMIN")
                         .requestMatchers("/api/test/**").permitAll()
-                        .requestMatchers("/payment/ssl-success-page").permitAll()
-                        .requestMatchers("/payment/ssl-fail-page").permitAll()
-                        .requestMatchers("/payment/ssl-cancel-page").permitAll()
+                        .requestMatchers("/api/payment/ssl-success-page").permitAll()
+                        .requestMatchers("/api/payment/ssl-fail-page").permitAll()
+                        .requestMatchers("/api/payment/ssl-cancel-page").permitAll()
                         .requestMatchers("/*.html").permitAll()
                         .requestMatchers("/static/**").permitAll()
                         .anyRequest().authenticated() // All other requests MUST be authenticated

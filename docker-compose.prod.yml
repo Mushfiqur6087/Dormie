@@ -25,6 +25,7 @@ services:
       SPRING_DATASOURCE_USERNAME: hms_user
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET:  ${JWT_SECRET}        # ← from GitHub Secret
+      AZURE_VM_HOST: ${AZURE_VM_HOST}   # ← VM host for payment callbacks
     depends_on:
       db:
         condition: service_healthy

@@ -38,9 +38,9 @@ public class SSLCommerzConfiguration {
     }
     
     public static class Urls {
-        private String success = "/payment/ssl-success-page";
-        private String fail = "/payment/ssl-fail-page";
-        private String cancel = "/payment/ssl-cancel-page";
+        private String success = "/api/payment/ssl-success-page";
+        private String fail = "/api/payment/ssl-fail-page";
+        private String cancel = "/api/payment/ssl-cancel-page";
         
         public String getSuccess() { return success; }
         public void setSuccess(String success) { this.success = success; }

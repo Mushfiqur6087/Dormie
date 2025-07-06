@@ -27,10 +27,7 @@ public class PaymentTransactionHelper {
     @Autowired
     private SSLCommerzConfiguration sslCommerzConfig;
 
-    @Value("${server.port:8080}")
-    private String serverPort;
-
-    @Value("${app.base.url:http://localhost}")
+    @Value("${app.base.url:http://localhost:8080}")
     private String baseUrl;
 
     /**
@@ -199,7 +196,8 @@ public class PaymentTransactionHelper {
         params.put("cus_phone", request.getCustomerPhone());
 
         // URL configuration
-        String fullBaseUrl = baseUrl + ":" + serverPort;
+        // In production, don't append port as nginx handles external traffic on port 80
+        String fullBaseUrl = baseUrl;
         params.put("success_url", fullBaseUrl + sslCommerzConfig.getUrls().getSuccess());
         params.put("fail_url", fullBaseUrl + sslCommerzConfig.getUrls().getFail());
         params.put("cancel_url", fullBaseUrl + sslCommerzConfig.getUrls().getCancel());

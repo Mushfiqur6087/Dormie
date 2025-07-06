@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.HMS.hms.Security.UserDetailsImpl;
 import com.HMS.hms.Service.PaymentService;
 @RestController
-@RequestMapping("/payment")
+@RequestMapping("/api/payment")
 public class PaymentController {
     
     private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);

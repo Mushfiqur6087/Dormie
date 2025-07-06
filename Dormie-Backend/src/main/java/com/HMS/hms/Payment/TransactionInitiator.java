@@ -6,14 +6,20 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
  * This class initiates a transaction request to SSL Commerz
  * required parameters to hit SSL Commerz payment page are constructed in a Map of String as key value pair
  * Its method initTrnxnRequest returns JSON list or String with Session key which then used to select payment option
  */
+@Component
 public class TransactionInitiator {
     private static final Logger logger = LoggerFactory.getLogger(TransactionInitiator.class);
+    
+    @Value("${app.base.url}")
+    private String baseUrl;
     
     public String initTrnxnRequest() {
         String response = "";
@@ -48,16 +54,15 @@ public class TransactionInitiator {
      */
     private Map<String, String> constructDefaultRequestParameters() {
         // CREATING LIST OF POST DATA
-        String baseUrl = "http://localhost:8080/";
         Map<String, String> postData = new HashMap<>();
         postData.put("store_id", "abc682f4e02dae8b"); // Store ID
         postData.put("store_passwd", "abc682f4e02dae8b@ssl"); // Store password
         postData.put("total_amount", "150.00"); // Default amount
         String uniqueTranId = "TXN-" + UUID.randomUUID();
         postData.put("tran_id", uniqueTranId); // Use unique tran_id for each API call
-        postData.put("success_url", baseUrl + "payment/ssl-success-page");
-        postData.put("fail_url", "https://sandbox.sslcommerz.com/developer/fail.php");
-        postData.put("cancel_url", "https://sandbox.sslcommerz.com/developer/cancel.php");
+        postData.put("success_url", baseUrl + "/api/payment/ssl-success-page");
+        postData.put("fail_url", baseUrl + "/api/payment/ssl-fail-page");
+        postData.put("cancel_url", baseUrl + "/api/payment/ssl-cancel-page");
         postData.put("cus_name", "Dormie User");
         postData.put("cus_email", "user@example.com");
         postData.put("cus_add1", "BUET Campus");

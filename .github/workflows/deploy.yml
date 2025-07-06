@@ -75,6 +75,7 @@ jobs:
         run: |
           export DB_PASSWORD="$DB_PASSWORD"
           export JWT_SECRET="$JWT_SECRET"
+          export AZURE_VM_HOST="$AZ_HOST"
           
           docker compose -f docker-compose.prod.yml up --build -d
 

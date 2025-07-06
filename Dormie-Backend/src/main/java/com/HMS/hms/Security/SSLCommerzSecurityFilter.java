@@ -91,7 +91,7 @@ public class SSLCommerzSecurityFilter implements Filter {
     }
     
     private boolean isPaymentCallback(String requestUri) {
-        return requestUri.startsWith("/payment/ssl-");
+        return requestUri.startsWith("/api/payment/ssl-");
     }
     
     private boolean isValidSourceIP(HttpServletRequest request) {

@@ -251,7 +251,7 @@ export default function MyDues() {
         return
       }
 
-      const response = await fetch(createApiUrl("/payment/initiate"), {
+      const response = await fetch(createApiUrl("/api/payment/initiate"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
