@@ -27,11 +27,8 @@ COPY . .
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
-# 1) compile
-RUN pnpm run build
-
-# 2) export to static HTML
-RUN pnpm exec next export          
+# 1) compile and export to static HTML (output: 'export' in next.config.mjs handles this)
+RUN pnpm run build          
 ####################################################
 
 ################ 3. prod (Nginx) ###################
