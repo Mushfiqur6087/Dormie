@@ -20,3 +20,7 @@ COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","app.jar"]
+
+# ───────── 3. production stage ────
+FROM runtime AS prod
+# Production stage is the same as runtime for this application

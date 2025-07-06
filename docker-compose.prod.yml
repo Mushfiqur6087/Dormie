@@ -33,7 +33,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-# ─────────────────────────── FRONTEND build  ────────────────────
+# ─────────────────────────── FRONTEND (Nginx serves built app) ─────────────
   frontend:
     build:
       context: .
@@ -41,20 +41,10 @@ services:
       target: prod
       args:
         VITE_API_URL: /api                  # baked into JS bundle
-    depends_on: [ backend ]
-    restart: unless-stopped
-
-# ─────────────────────────── NGINX (serves + proxy) ─────────────
-  nginx:
-    build:
-      context: .
-      dockerfile: Dormie-Frontend/Dockerfile
-      target: prod
     ports:
       - "80:80"
       - "443:443"
     depends_on:
-      - frontend
       - backend
     restart: unless-stopped
 
