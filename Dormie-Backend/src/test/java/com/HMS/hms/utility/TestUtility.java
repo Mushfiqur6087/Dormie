@@ -134,12 +134,15 @@ public class TestUtility {
      * @return SignupRequest with default test data
      */
     public SignupRequest createDefaultStudentSignupRequest() {
+        long unique = System.currentTimeMillis() % 1000000L;
         SignupRequest request = new SignupRequest();
-        request.setUsername("Test Student");
-        request.setEmail("teststudent@dormie.com");
+        request.setUsername("TestStudent" + unique);
+        request.setEmail("teststudent" + unique + "@dormie.com");
         request.setPassword("TestPassword123!");
         request.setRole("STUDENT");
-        request.setStudentId(20240999L);
+        request.setStudentId(20240000L + unique);
+        request.setDepartment("Computer Science");
+        request.setBatch(2024);
         return request;
     }
 
@@ -154,12 +157,15 @@ public class TestUtility {
      */
     public SignupRequest createCustomStudentSignupRequest(String username, String email, 
                                                          String password, Long studentId) {
+        long unique = System.currentTimeMillis() % 1000000L;
         SignupRequest request = new SignupRequest();
-        request.setUsername(username);
-        request.setEmail(email);
+        request.setUsername(username + unique);
+        request.setEmail(email.replace("@", unique + "@"));
         request.setPassword(password);
         request.setRole("STUDENT");
-        request.setStudentId(studentId);
+        request.setStudentId(studentId + unique);
+        request.setDepartment("Computer Science");
+        request.setBatch(2024);
         return request;
     }
 
