@@ -1,11 +1,12 @@
-# docker-compose.prod.yml
+version: "3.8"
+
 services:
 # ─────────────────────────── DATABASE ───────────────────────────
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: hms_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD}      # ← inject from GitHub Secret
+      POSTGRES_PASSWORD: ${DB_PASSWORD}   # ← from GitHub Secret
       POSTGRES_DB: hmsdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -13,39 +14,29 @@ services:
       test: ["CMD-SHELL", "pg_isready -U hms_user -d hmsdb"]
       interval: 5s
       retries: 10
-    restart: unless-stopped                 # safe for prod
+    restart: unless-stopped
 
 # ─────────────────────────── BACKEND (Spring) ───────────────────
   backend:
     build:
       context: ./Dormie-Backend
-      target: prod                          # use runtime stage
+      target: prod                      # runtime stage in backend Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL:      jdbc:postgresql://db:5432/hmsdb
       SPRING_DATASOURCE_USERNAME: hms_user
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET:  ${JWT_SECRET}            # from GitHub Secret
-      # optional override:
-      # JWT_EXPIRATION_MS: 86400000
+      JWT_SECRET:  ${JWT_SECRET}        # ← from GitHub Secret
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
 
-# ─────────────────────────── FRONTEND (Nginx serves built app) ─────────────
-frontend:
-  build:
-    context: ./Dormie-Frontend      # back to sub-folder
-    dockerfile: Dockerfile
-    target: prod
-    args:
-      VITE_API_URL: /api
-  ports:
-    - "80:80"
-    - "443:443"
-  depends_on: [ backend ]
-
-volumes:
-  postgres_data:
-    driver: local
+# ─────────────────────────── FRONTEND (Nginx + static build) ────
+  frontend:
+    build:
+      context: ./Dormie-Frontend        # sub-folder containing Dockerfile
+      dockerfile: Dockerfile
+      target: prod                      # prod stage copies dist + nginx conf
+      args:
+        VITE
