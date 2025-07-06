@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer; // <--- NEW IMPORT
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -55,13 +54,6 @@ public class WebSecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // --- CRITICAL FIX START: Exclude /uploads/** from security filter chain ---
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().requestMatchers("/uploads/**");
-    }
-    // --- CRITICAL FIX END ---
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -77,7 +69,6 @@ public class WebSecurityConfig {
                         .requestMatchers("/payment/ssl-cancel-page").permitAll()
                         .requestMatchers("/*.html").permitAll()
                         .requestMatchers("/static/**").permitAll()
-                        // Removed .requestMatchers("/uploads/**").permitAll() from here, as webSecurityCustomizer will handle it
                         .anyRequest().authenticated() // All other requests MUST be authenticated
                 );
 

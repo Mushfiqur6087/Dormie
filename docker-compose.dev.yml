@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hms_user
+      POSTGRES_PASSWORD: hms_password
+      POSTGRES_DB: hmsdb
+    ports:
+      - "5432:5432"          # so you can connect with PgAdmin if you like
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hms_user -d hmsdb"]
+      interval: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./Dormie-Backend
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "8080:8080"          # localhost:8080 → container:8080
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:                 # for live-reload during coding
+      - ./Dormie-Backend/src:/app/src
+      - ~/.m2:/root/.m2
+
+  frontend:
+    build:
+      context: ./Dormie-Frontend
+    ports:
+      - "3000:3000"          # localhost:3000 → container:3000
+    depends_on:
+      - backend
+    volumes:                 # for live-reload during coding
+      - ./Dormie-Frontend:/app
+      - /app/node_modules    # anonymous volume to prevent overwriting node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true  # for better file watching in Docker
+
+volumes:
+  postgres_data:
