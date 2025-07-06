@@ -3,6 +3,7 @@
 import { useState } from "react"
 import * as XLSX from "xlsx"
 import { Upload, FileText, Users, CheckCircle, AlertCircle, Download, Loader } from "lucide-react"
+import { createApiUrl } from "../../../lib/api"
 
 export default function AdminStudentBatchUpload() {
   const [file, setFile] = useState(null)
@@ -149,7 +150,7 @@ export default function AdminStudentBatchUpload() {
           try {
             console.log(`Processing row ${rowIndex}: Sending request with token: ${adminToken ? adminToken.substring(0, 20) + '...' : 'NO TOKEN'}`)
             
-            const response = await fetch("http://localhost:8080/api/auth/admin/signup", {
+            const response = await fetch(createApiUrl("/api/auth/admin/signup"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

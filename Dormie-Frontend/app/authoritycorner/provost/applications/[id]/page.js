@@ -244,7 +244,7 @@ export default function ProvostApplicationDetailPage() {
               <div className="flex justify-center">
                 {application.studentImagePath ? (
                   <img
-                    src={`${IMAGE_BASE_URL}${application.studentImagePath}`}
+                    src={createUploadUrl(application.studentImagePath)}
                     alt={`Student ${application.studentIdNo} Image`}
                     className="max-w-full h-auto max-h-80 object-contain rounded-xl border border-gray-200 dark:border-gray-600 shadow-lg"
                     onError={(e) => {

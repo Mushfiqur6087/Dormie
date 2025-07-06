@@ -287,7 +287,7 @@ export default function AdminRoomBatchUpload() {
               </div>
               <div className="flex items-start space-x-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
-                <span>Data will be sent to localhost:8080/api/rooms/set-room endpoint</span>
+                <span>Data will be sent to the backend API endpoint</span>
               </div>
             </div>
           </div>
