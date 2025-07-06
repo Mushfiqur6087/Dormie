@@ -34,19 +34,17 @@ services:
     restart: unless-stopped
 
 # ─────────────────────────── FRONTEND (Nginx serves built app) ─────────────
-  frontend:
-    build:
-      context: .
-      dockerfile: Dormie-Frontend/Dockerfile
-      target: prod
-      args:
-        VITE_API_URL: /api                  # baked into JS bundle
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - backend
-    restart: unless-stopped
+frontend:
+  build:
+    context: ./Dormie-Frontend      # back to sub-folder
+    dockerfile: Dockerfile
+    target: prod
+    args:
+      VITE_API_URL: /api
+  ports:
+    - "80:80"
+    - "443:443"
+  depends_on: [ backend ]
 
 volumes:
   postgres_data:
