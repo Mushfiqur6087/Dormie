@@ -32,19 +32,29 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-# ─────────────────────────── FRONTEND (Nginx + static build) ────
+# ─────────────────────────── FRONTEND (Next.js SSR) ────
   frontend:
     build:
       context: ./Dormie-Frontend        # sub-folder containing Dockerfile
       dockerfile: Dockerfile
-      target: prod                      # prod stage copies dist + nginx conf
-      args:
-        VITE_API_URL: /api              # baked into JS bundle
+      target: prod                      # prod stage runs Next.js server
+    environment:
+      - NODE_ENV=production
     depends_on:
       - backend
+    restart: unless-stopped
+
+# ─────────────────────────── REVERSE PROXY (Nginx) ────
+  nginx:
+    image: nginx:stable-alpine
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - backend
     restart: unless-stopped
 
 volumes:

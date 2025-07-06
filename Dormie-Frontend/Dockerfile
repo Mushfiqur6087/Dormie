@@ -30,17 +30,28 @@ RUN pnpm install
 # Copy source code
 COPY . .
 
-ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
-
-# Build the application (output: 'export' in next.config.mjs handles static export)
+# Build the application for production
 RUN pnpm run build
 ####################################################
 
-################ 3. prod (Nginx) ###################
-FROM nginx:stable-alpine AS prod
-COPY ./nginx/prod.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/out /usr/share/nginx/html  
-EXPOSE 80 443
-CMD ["nginx","-g","daemon off;"]
+################ 3. prod (Next.js SSR) #############
+FROM node:18-alpine AS prod
+WORKDIR /app
+RUN npm i -g pnpm
+
+# Copy package files and install production dependencies
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --prod
+
+# Copy built application from build stage
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+COPY --from=build /app/next.config.mjs ./next.config.mjs
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+
+EXPOSE 3000
+CMD ["pnpm", "start"]
 ####################################################
