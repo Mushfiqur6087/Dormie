@@ -33,6 +33,8 @@ services:
   frontend:
     build:
       context: ./Dormie-Frontend
+      target: development     # Use the development stage for dev environment
+    command: ["pnpm", "run", "dev"]   # ← exec form (array), no /bin/sh
     ports:
       - "3000:3000"          # localhost:3000 → container:3000
     depends_on:

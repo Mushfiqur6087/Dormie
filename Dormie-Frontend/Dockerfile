@@ -15,7 +15,7 @@ RUN pnpm install            # installs into /app/node_modules
 COPY . .
 
 EXPOSE 3000
-CMD ["pnpm", "run", "dev"]  # Vite / Next.js dev server
+CMD ["pnpm", "run", "dev"]
 
 
 ################ 2. build (Next.js) ################

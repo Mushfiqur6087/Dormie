@@ -1,0 +1,13 @@
+services:
+  # ─────────────────────────── BACKEND TESTS (H2 Database) ───────────────────────────
+  backend-tests:
+    build:
+      context: ./Dormie-Backend
+      dockerfile: Dockerfile.test
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      JWT_SECRET: bXlTZWNyZXRLZXlGb3JITVNKV1RBdXRoZW50aWNhdGlvbjEyMzQ1Njc4OTA=
+    volumes:
+      - ./Dormie-Backend/src:/app/src
+      - ~/.m2:/root/.m2
+    command: ["./mvnw", "test", "-Dspring.profiles.active=test"]

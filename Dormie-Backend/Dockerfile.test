@@ -1,0 +1,39 @@
+# Multi-stage Dockerfile for testing Spring Boot application
+
+# ─────────────────────────── BUILD STAGE ───────────────────────────
+FROM openjdk:17-jdk-slim as build
+
+WORKDIR /app
+
+# Copy Maven wrapper and pom.xml
+COPY mvnw .
+COPY mvnw.cmd .
+COPY pom.xml .
+COPY .mvn/ .mvn/
+
+# Make mvnw executable
+RUN chmod +x ./mvnw
+
+# Download dependencies (this layer will be cached unless pom.xml changes)
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source code
+COPY src src
+
+# ─────────────────────────── TEST STAGE ───────────────────────────
+FROM build as test
+
+# Install dependencies needed for testing
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Set environment variables for testing
+ENV SPRING_PROFILES_ACTIVE=test
+ENV MAVEN_OPTS="-Xmx1024m"
+
+# Default command - run tests
+CMD ["./mvnw", "test", "-Dspring.profiles.active=test"]

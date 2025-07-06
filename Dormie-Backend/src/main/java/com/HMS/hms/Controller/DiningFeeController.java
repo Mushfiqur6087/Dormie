@@ -31,12 +31,14 @@ public class DiningFeeController {
 
     // Create a new dining fee
     @PostMapping
-    public ResponseEntity<DiningFeeDTO> createDiningFee(@Valid @RequestBody DiningFeeDTO createDiningFeeDTO) {
+    public ResponseEntity<?> createDiningFee(@Valid @RequestBody DiningFeeDTO createDiningFeeDTO) {
         try {
             DiningFeeDTO savedFee = diningFeeService.createDiningFeeFromDTO(createDiningFeeDTO);
             return new ResponseEntity<>(savedFee, HttpStatus.CREATED);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            // Return JSON error response for unexpected errors
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "An unexpected error occurred while creating dining fee: " + e.getMessage()));
         }
     }
 

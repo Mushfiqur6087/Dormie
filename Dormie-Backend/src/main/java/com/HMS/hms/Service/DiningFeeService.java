@@ -14,10 +14,10 @@ import com.HMS.hms.Repo.DiningFeeRepo;
 import com.HMS.hms.Repo.StudentDiningFeesRepo;
 import com.HMS.hms.Repo.UsersRepo;
 import com.HMS.hms.Tables.DiningFee;
+import com.HMS.hms.Tables.DiningFee.ResidencyType;
 import com.HMS.hms.Tables.StudentDiningFees;
 import com.HMS.hms.Tables.Students;
-import com.HMS.hms.Tables.Users;
-import com.HMS.hms.Tables.DiningFee.ResidencyType; // Ensure this is imported
+import com.HMS.hms.Tables.Users; // Ensure this is imported
 
 @Service
 public class DiningFeeService {
@@ -64,13 +64,6 @@ public class DiningFeeService {
 
     // DTO-based service methods
     public DiningFeeDTO createDiningFeeFromDTO(DiningFeeDTO createDTO) {
-        // Before creating, check if a fee for this year already exists
-        // This is important to prevent duplicate entries if type+year should be unique
-        Optional<DiningFee> existingFee = diningFeeRepo.findByTypeAndYear(ResidencyType.RESIDENT, createDTO.getYear());
-        if (existingFee.isPresent()) {
-            throw new IllegalArgumentException("Dining fee for year " + createDTO.getYear() + " already exists. Use update endpoint instead.");
-        }
-
         DiningFee diningFee = convertFromCreateDTO(createDTO);
         DiningFee savedFee = diningFeeRepo.save(diningFee);
 
