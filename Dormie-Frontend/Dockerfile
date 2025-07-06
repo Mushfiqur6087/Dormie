@@ -18,39 +18,26 @@ EXPOSE 3000
 CMD ["pnpm", "run", "dev"]  # Vite / Next.js dev server
 
 
-###############################################################################
-# 2️⃣  BUILD – compiles static site
-###############################################################################
+################ 2. build (Next.js) ################
 FROM node:18-alpine AS build
 WORKDIR /app
-
-# Install pnpm in this stage (needed for the build)
-RUN npm install -g pnpm       # <── fixed: makes pnpm available here
-
-# Re-use the node_modules from development stage
+RUN npm i -g pnpm
 COPY --from=development /app/node_modules ./node_modules
 COPY . .
-
-# Optional API base baked into JS
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
-# Build static assets
-RUN pnpm run build            # Vite → /app/dist   (Next export → /app/out)
+# 1) compile
+RUN pnpm run build
 
+# 2) export to static HTML
+RUN pnpm exec next export          
+####################################################
 
-###############################################################################
-# 3️⃣  PRODUCTION – tiny Nginx image serving the build
-###############################################################################
+################ 3. prod (Nginx) ###################
 FROM nginx:stable-alpine AS prod
-
-# Nginx config lives in Dormie-Frontend/nginx/prod.conf
 COPY ./nginx/prod.conf /etc/nginx/conf.d/default.conf
-
-# Copy only the built static files
-#  ↳ Vite output: /app/dist    (adjust if you use Next export → /app/out)
-COPY --from=build /app/dist /usr/share/nginx/html
-
+COPY --from=build /app/out /usr/share/nginx/html  
 EXPOSE 80 443
-CMD ["nginx", "-g", "daemon off;"]
-###############################################################################
+CMD ["nginx","-g","daemon off;"]
+####################################################
