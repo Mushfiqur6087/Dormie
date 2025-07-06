@@ -22,13 +22,19 @@ CMD ["pnpm", "run", "dev"]  # Vite / Next.js dev server
 FROM node:18-alpine AS build
 WORKDIR /app
 RUN npm i -g pnpm
-COPY --from=development /app/node_modules ./node_modules
+
+# Copy package files first for better cache
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
+
+# Copy source code
 COPY . .
+
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
-# 1) compile and export to static HTML (output: 'export' in next.config.mjs handles this)
-RUN pnpm run build          
+# Build the application (output: 'export' in next.config.mjs handles static export)
+RUN pnpm run build
 ####################################################
 
 ################ 3. prod (Nginx) ###################
