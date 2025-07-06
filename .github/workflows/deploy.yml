@@ -38,12 +38,32 @@ jobs:
           docker context create azure --docker "host=ssh://$AZ_USER@$AZ_HOST"
           docker context use azure
 
-      # 6. Build images & start stack on VM
+      # 6. Clean up any existing containers and build/deploy
+      - name: Debug port usage
+        run: |
+          echo "Checking what's using port 80:"
+          docker ps --filter "publish=80" || true
+          echo "All running containers:"
+          docker ps || true
+          echo "System processes using port 80:"
+          ss -tlnp | grep :80 || netstat -tlnp | grep :80 || true
+          
+      - name: Clean up existing deployment
+        run: |
+          # Stop and remove any existing containers
+          docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
+          
+          # Remove any containers that might be using port 80
+          docker ps -q --filter "publish=80" | xargs -r docker stop || true
+          docker ps -aq --filter "publish=80" | xargs -r docker rm || true
+          
+          # Clean up any dangling containers
+          docker container prune -f || true
+          
       - name: Build and deploy
         run: |
           export DB_PASSWORD="$DB_PASSWORD"
           export JWT_SECRET="$JWT_SECRET"
-          docker compose -f docker-compose.prod.yml down || true
           docker compose -f docker-compose.prod.yml up --build -d
 
       # 7. Show container status
