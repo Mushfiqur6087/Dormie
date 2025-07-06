@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { CreditCard, Calendar, DollarSign, AlertCircle, CheckCircle, Wallet, TrendingUp, Receipt, History } from "lucide-react"
+import { createApiUrl } from "../../../lib/api"
 
 export default function MyDues() {
   const [dues, setDues] = useState({
@@ -49,7 +50,7 @@ export default function MyDues() {
     try {
       // --- Step 1: Fetch Hall Fees for the authenticated user ---
       console.log("Fetching Hall Fees for userId:", userId)
-      const hallFeesRes = await fetch(`http://localhost:8080/api/student-hall-fees/user/${userId}`, {
+      const hallFeesRes = await fetch(createApiUrl(`/api/student-hall-fees/user/${userId}`), {
         method: "GET",
         headers: authHeaders,
       })
@@ -76,7 +77,7 @@ export default function MyDues() {
 
       // --- Step 2: Fetch Dining Fees for the authenticated user ---
       console.log("Fetching Dining Fees for userId:", userId)
-      const diningFeesRes = await fetch(`http://localhost:8080/api/student-dining-fees/user/${userId}`, {
+      const diningFeesRes = await fetch(createApiUrl(`/api/student-dining-fees/user/${userId}`), {
         method: "GET",
         headers: authHeaders,
       })
@@ -146,7 +147,7 @@ export default function MyDues() {
     try {
       console.log("[DEBUG] JWT Token for Hall Fee Payments:", jwtToken)
       console.log("Fetching Hall Fee Payments for userId:", userId)
-      const paymentsRes = await fetch(`http://localhost:8080/api/student-hall-fees/payment/user/${userId}`, {
+      const paymentsRes = await fetch(createApiUrl(`/api/student-hall-fees/payment/user/${userId}`), {
         method: "GET",
         headers: authHeaders,
       })
@@ -198,7 +199,7 @@ export default function MyDues() {
     try {
       console.log("[DEBUG] JWT Token for Dining Fee Payments:", jwtToken)
       console.log("Fetching Dining Fee Payments for userId:", userId)
-      const paymentsRes = await fetch(`http://localhost:8080/api/student-dining-fees/payment/user/${userId}`, {
+      const paymentsRes = await fetch(createApiUrl(`/api/student-dining-fees/payment/user/${userId}`), {
         method: "GET",
         headers: authHeaders,
       })
@@ -250,7 +251,7 @@ export default function MyDues() {
         return
       }
 
-      const response = await fetch("http://localhost:8080/payment/initiate", {
+      const response = await fetch(createApiUrl("/payment/initiate"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

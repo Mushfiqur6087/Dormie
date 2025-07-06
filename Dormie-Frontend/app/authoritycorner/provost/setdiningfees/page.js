@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
+import { createApiUrl } from "../../../../lib/api"
 import {
   Utensils,
   Save,
@@ -53,7 +54,7 @@ export default function SetDiningFees() {
       }
 
       console.log("Sending Dining Fee:", diningFeeData)
-      const res = await fetch("http://localhost:8080/api/dining-fees", {
+      const res = await fetch(createApiUrl("/api/dining-fees"), {
         method: "POST",
         headers: headers,
         body: JSON.stringify(diningFeeData),

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Home, AlertCircle, Users, Building, Eye, UserPlus, ArrowRight } from "lucide-react"
+import { createApiUrl } from "../../../../lib/api"
 
 export default function SetRooms() {
   const [rooms, setRooms] = useState([])
@@ -29,7 +30,7 @@ export default function SetRooms() {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/api/rooms/unassigned-students", {
+      const response = await fetch(createApiUrl("/api/rooms/unassigned-students"), {
         method: "GET",
         headers: authHeaders,
       })
@@ -65,7 +66,7 @@ export default function SetRooms() {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/api/rooms", {
+      const response = await fetch(createApiUrl("/api/rooms"), {
         method: "GET",
         headers: authHeaders,
       })
@@ -133,7 +134,7 @@ export default function SetRooms() {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/api/rooms/assign-room", {
+      const response = await fetch(createApiUrl("/api/rooms/assign-room"), {
         method: "POST",
         headers: authHeaders,
         body: JSON.stringify(requestBody),

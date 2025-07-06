@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { createApiUrl } from "../../../../lib/api"
 import {
   Search,
   Filter,
@@ -48,7 +49,7 @@ export default function ProvostApplicationListPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/applications/all-summaries?sortBy=${sortBy}&sortOrder=${sortOrder}`,
+        createApiUrl(`/api/applications/all-summaries?sortBy=${sortBy}&sortOrder=${sortOrder}`),
         {
           method: "GET",
           headers: {

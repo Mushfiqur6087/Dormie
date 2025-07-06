@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation" // Import useRouter for redirection
+import { createApiUrl } from "../../../lib/api"
 import {
   User,
   GraduationCap,
@@ -129,7 +130,7 @@ export default function ApplyForm() {
         setLoadingAllocationStatus(true)
         setAllocationStatusError(null)
 
-        const response = await fetch("http://localhost:8080/api/rooms/allocation-status", {
+        const response = await fetch(createApiUrl("/api/rooms/allocation-status"), {
           method: "GET",
           headers: {
             Authorization: `Bearer ${jwtToken}`,
@@ -199,7 +200,7 @@ export default function ApplyForm() {
 
     try {
       // Send JSON data to the backend endpoint
-      const response = await fetch("http://localhost:8080/api/applications/seat", {
+      const response = await fetch(createApiUrl("/api/applications/seat"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json", // Send as JSON instead of multipart/form-data

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import * as XLSX from "xlsx"
 import { Upload, FileText, Home, CheckCircle, AlertCircle, Download, Loader } from "lucide-react"
+import { createApiUrl } from "../../../lib/api"
 
 export default function AdminRoomBatchUpload() {
   const [file, setFile] = useState(null)
@@ -135,7 +136,7 @@ export default function AdminRoomBatchUpload() {
           try {
             console.log(`Processing row ${rowIndex}: Sending request with token: ${adminToken ? adminToken.substring(0, 20) + '...' : 'NO TOKEN'}`)
             
-            const response = await fetch("http://localhost:8080/api/rooms/set-room", {
+            const response = await fetch(createApiUrl("/api/rooms/set-room"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

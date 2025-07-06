@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { User, Mail, Phone, MapPin, Calendar, GraduationCap, Edit, Save, X, Home, CheckCircle, Clock, AlertCircle } from "lucide-react"
+import { createApiUrl } from "../../lib/api"
 
 export default function StudentDashboard() {
   const [studentInfo, setStudentInfo] = useState({
@@ -77,7 +78,7 @@ export default function StudentDashboard() {
         dateOfBirth: editableFields.dateOfBirth
       }
 
-      const response = await fetch("http://localhost:8080/api/students/update", {
+      const response = await fetch(createApiUrl("/api/students/update"), {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -146,7 +147,7 @@ export default function StudentDashboard() {
       }
 
       console.log("Making allocation status request...")
-      const response = await fetch("http://localhost:8080/api/rooms/allocation-status", {
+      const response = await fetch(createApiUrl("/api/rooms/allocation-status"), {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -309,7 +310,7 @@ export default function StudentDashboard() {
           return
         }
 
-        const response = await fetch("http://localhost:8080/api/students/me", {
+        const response = await fetch(createApiUrl("/api/students/me"), {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`,

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
+import { createApiUrl } from "../../../../lib/api"
 import {
   DollarSign,
   Save,
@@ -55,7 +56,7 @@ export default function SetHallFees() {
       }
 
       console.log("Sending Attached Fee:", attachedFeeData)
-      const attachedRes = await fetch("http://localhost:8080/api/hall-fees", {
+      const attachedRes = await fetch(createApiUrl("/api/hall-fees"), {
         method: "POST",
         headers: headers,
         body: JSON.stringify(attachedFeeData),
@@ -77,7 +78,7 @@ export default function SetHallFees() {
       }
 
       console.log("Sending Resident Fee:", residentFeeData)
-      const residentRes = await fetch("http://localhost:8080/api/hall-fees", {
+      const residentRes = await fetch(createApiUrl("/api/hall-fees"), {
         method: "POST",
         headers: headers,
         body: JSON.stringify(residentFeeData),

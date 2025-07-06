@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
+import { createApiUrl, createUploadUrl } from "../../../../../lib/api"
 import {
   ArrowLeft,
   User,
@@ -30,8 +31,6 @@ export default function ProvostApplicationDetailPage() {
   const [error, setError] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const IMAGE_BASE_URL = "http://localhost:8080/uploads/"
-
   const fetchApplicationDetails = useCallback(async () => {
     if (!id) {
       setLoading(false)
@@ -50,7 +49,7 @@ export default function ProvostApplicationDetailPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/applications/${id}`, {
+      const response = await fetch(createApiUrl(`/api/applications/${id}`), {
         method: "GET",
         headers: {
           Authorization: `Bearer ${jwtToken}`,
@@ -94,7 +93,7 @@ export default function ProvostApplicationDetailPage() {
       }
 
       try {
-        const response = await fetch(`http://localhost:8080/api/applications/${id}/${actionType}`, {
+        const response = await fetch(createApiUrl(`/api/applications/${id}/${actionType}`), {
           method: "POST",
           headers: {
             Authorization: `Bearer ${jwtToken}`,
