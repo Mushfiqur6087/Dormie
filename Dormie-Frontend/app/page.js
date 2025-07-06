@@ -37,13 +37,6 @@ export default function Home() {
                 <span>Login</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link
-                href="/signup"
-                className="group border-2 border-green-600 text-green-600 dark:text-green-400 hover:bg-green-600 hover:text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 flex items-center justify-center space-x-2"
-              >
-                <span>Sign Up</span>
-                <Users className="h-5 w-5 group-hover:scale-110 transition-transform" />
-              </Link>
             </div>
 
             {/* Secondary Navigation */}
@@ -143,17 +136,16 @@ export default function Home() {
         </div>
         <div className="container mx-auto px-4 text-center relative">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Transform Your Dormitory Experience?
+            Transform Your Dormitory Experience
           </h2>
           <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
-            Join Dorm-E today and discover how technology can make dormitory life easier, more connected, and more
-            enjoyable.
+            Dorm-E provides a comprehensive dormitory management system designed to make student life easier, more connected, and more enjoyable.
           </p>
           <Link
-            href="/signup"
+            href="/login"
             className="group bg-white text-green-600 hover:bg-gray-100 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center space-x-2"
           >
-            <span>Sign Up Now</span>
+            <span>Login to Get Started</span>
             <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>

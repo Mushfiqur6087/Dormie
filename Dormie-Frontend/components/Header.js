@@ -39,15 +39,9 @@ export default function Header() {
             </Link>
             <Link
               href="/login"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
               className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
             >
-              Sign Up
+              Login
             </Link>
           </nav>
 
@@ -86,15 +80,9 @@ export default function Header() {
               </Link>
               <Link
                 href="/login"
-                className="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup"
                 className="block px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
               >
-                Sign Up
+                Login
               </Link>
             </div>
           </div>
