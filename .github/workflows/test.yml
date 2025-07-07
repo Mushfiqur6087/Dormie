@@ -1,0 +1,45 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+    
+    steps:
+      # 1. Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. Run backend and frontend tests
+      - name: Run tests with Docker Compose
+        run: |
+          echo "Starting backend and frontend tests..."
+          docker compose -f docker-compose-tests.dev.yml up --build --abort-on-container-exit --exit-code-from backend-tests
+
+      # 4. Clean up test containers
+      - name: Clean up test containers
+        if: always()
+        run: |
+          docker compose -f docker-compose-tests.dev.yml down --volumes --remove-orphans || true
+
+      # 5. Show test results (if containers are still running)
+      - name: Show test container logs
+        if: failure()
+        run: |
+          echo "=== Backend Test Logs ==="
+          docker compose -f docker-compose-tests.dev.yml logs backend-tests || true
+          echo "=== Frontend Test Logs ==="
+          docker compose -f docker-compose-tests.dev.yml logs frontend-tests || true
