@@ -11,3 +11,21 @@ services:
       - ./Dormie-Backend/src:/app/src
       - ~/.m2:/root/.m2
     command: ["./mvnw", "test", "-Dspring.profiles.active=test"]
+
+  # ─────────────────────────── FRONTEND TESTS (Jest + React Testing Library) ─────────────────────────
+  frontend-tests:
+    build:
+      context: ./Dormie-Frontend
+      dockerfile: Dockerfile.test
+    environment:
+      NODE_ENV: test
+      CI: true
+      NODE_OPTIONS: "--max-old-space-size=4096"
+      FORCE_COLOR: 1
+    volumes:
+      - ./Dormie-Frontend:/app
+      - /app/node_modules
+      - ./Dormie-Frontend/coverage:/app/coverage
+    command: ["pnpm", "run", "test", "--coverage", "--watchAll=false", "--passWithNoTests", "--verbose", "--detectOpenHandles", "--forceExit", "--runInBand"]
+    ports:
+      - "3000:3000"
