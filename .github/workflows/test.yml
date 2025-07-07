@@ -27,19 +27,19 @@ jobs:
       - name: Run tests with Docker Compose
         run: |
           echo "Starting backend and frontend tests..."
-          docker compose -f docker-compose-tests.dev.yml up --build --abort-on-container-exit --exit-code-from backend-tests
+          docker compose -f docker-compose-tests.prod.yml up --build --abort-on-container-exit
 
       # 4. Clean up test containers
       - name: Clean up test containers
         if: always()
         run: |
-          docker compose -f docker-compose-tests.dev.yml down --volumes --remove-orphans || true
+          docker compose -f docker-compose-tests.prod.yml down --volumes --remove-orphans || true
 
       # 5. Show test results (if containers are still running)
       - name: Show test container logs
         if: failure()
         run: |
           echo "=== Backend Test Logs ==="
-          docker compose -f docker-compose-tests.dev.yml logs backend-tests || true
+          docker compose -f docker-compose-tests.prod.yml logs backend-tests || true
           echo "=== Frontend Test Logs ==="
-          docker compose -f docker-compose-tests.dev.yml logs frontend-tests || true
+          docker compose -f docker-compose-tests.prod.yml logs frontend-tests || true
