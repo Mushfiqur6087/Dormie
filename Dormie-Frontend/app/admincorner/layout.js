@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { Shield, Users, LogOut, Menu, X, Home } from "lucide-react"
+import { Shield, Users, Home, LogOut, Menu, X, MessageSquare } from "lucide-react"
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname()
@@ -45,6 +45,12 @@ export default function AdminLayout({ children }) {
       label: "Submit Room List",
       icon: Home,
       active: pathname === "/admincorner/submitroomlist",
+    },
+    {
+      href: "/admincorner/complaints",
+      label: "Manage Complaints",
+      icon: MessageSquare,
+      active: pathname.startsWith("/admincorner/complaints"),
     },
   ]
 

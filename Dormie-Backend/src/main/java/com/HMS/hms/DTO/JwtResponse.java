@@ -1,8 +1,10 @@
 package com.HMS.hms.DTO;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public class JwtResponse {
+    @JsonProperty("accessToken")
     private String token;
     private String type = "Bearer";
     private Long id;

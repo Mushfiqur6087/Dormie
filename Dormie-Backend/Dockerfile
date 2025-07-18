@@ -2,9 +2,14 @@
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 
+# Install dos2unix to fix line endings
+RUN apk add --no-cache dos2unix
+
 # copy build metadata first so Maven cache is reused
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
+# Fix line endings and make Maven wrapper executable
+RUN dos2unix mvnw && chmod +x mvnw
 RUN ./mvnw -B dependency:go-offline
 
 # copy sources and build
