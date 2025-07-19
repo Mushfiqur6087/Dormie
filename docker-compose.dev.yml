@@ -26,9 +26,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    volumes:                 # for live-reload during coding
-      - ./Dormie-Backend/src:/app/src
-      - ~/.m2:/root/.m2
+    # Remove problematic volume mounts that interfere with compiled application
+    # volumes:                 # for live-reload during coding
+    #   - ./Dormie-Backend/src:/app/src
+    #   - ~/.m2:/root/.m2
 
   frontend:
     build:

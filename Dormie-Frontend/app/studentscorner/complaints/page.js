@@ -213,8 +213,8 @@ export default function StudentComplaintsPage() {
                 <MessageSquare className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">My Complaints</h1>
-                <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">Manage your complaints and reports</p>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">All Student Complaints</h1>
+                <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">View and browse all student complaints and reports</p>
               </div>
             </div>
             <div className="flex space-x-4">

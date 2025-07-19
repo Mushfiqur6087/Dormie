@@ -13,7 +13,6 @@ import {
   CheckCircle, 
   AlertCircle, 
   AlertTriangle, 
-  Package,
   Image as ImageIcon,
   Download,
   Eye,
@@ -156,10 +155,10 @@ export default function ProvostComplaintDetailPage() {
 
   const getTypeIcon = (type) => {
     switch (type?.toLowerCase()) {
-      case "ragging":
-        return <AlertTriangle className="h-6 w-6 text-red-500" />
-      case "lost_and_found":
-        return <Package className="h-6 w-6 text-blue-500" />
+      case "maintenance":
+        return <AlertTriangle className="h-6 w-6 text-orange-500" />
+      case "general":
+        return <MessageSquare className="h-6 w-6 text-gray-500" />
       default:
         return <MessageSquare className="h-6 w-6 text-gray-500" />
     }
@@ -167,28 +166,30 @@ export default function ProvostComplaintDetailPage() {
 
   const getTypeColor = (type) => {
     switch (type?.toLowerCase()) {
-      case "ragging":
-        return "bg-red-100 text-red-800 border-red-200"
-      case "lost_and_found":
-        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "maintenance":
+        return "bg-orange-100 text-orange-800 border-orange-200"
+      case "general":
+        return "bg-gray-100 text-gray-800 border-gray-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
 
   const getPriorityLevel = (complaint) => {
-    if (complaint?.complaintType === 'RAGGING') return 'CRITICAL'
-    if (complaint?.status === 'OPEN' && 
-        new Date() - new Date(complaint.createdAt) > 7 * 24 * 60 * 60 * 1000) return 'HIGH'
+    const daysSinceCreated = Math.floor((new Date() - new Date(complaint.createdAt)) / (1000 * 60 * 60 * 24))
+    
+    if (complaint?.complaintType === 'MAINTENANCE' && daysSinceCreated > 3) return 'HIGH'
+    if (complaint?.status === 'OPEN' && daysSinceCreated > 7) return 'HIGH'
+    if (complaint?.status === 'OPEN' && daysSinceCreated > 3) return 'MEDIUM'
     return 'NORMAL'
   }
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'CRITICAL':
-        return 'bg-red-100 text-red-800 border-red-200'
       case 'HIGH':
         return 'bg-orange-100 text-orange-800 border-orange-200'
+      case 'MEDIUM':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200'
     }
@@ -260,17 +261,12 @@ export default function ProvostComplaintDetailPage() {
   }
 
   const priority = getPriorityLevel(complaint)
-  const isRagging = complaint.complaintType === 'RAGGING'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className={`rounded-2xl shadow-xl p-8 mb-8 border ${
-          isRagging 
-            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' 
-            : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
-        }`}>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
@@ -279,20 +275,15 @@ export default function ProvostComplaintDetailPage() {
               >
                 <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
               </button>
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-                isRagging 
-                  ? 'bg-gradient-to-br from-red-500 to-red-600' 
-                  : 'bg-gradient-to-br from-purple-500 to-indigo-600'
-              }`}>
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center">
                 {getTypeIcon(complaint.complaintType)}
               </div>
               <div>
-                <h1 className={`text-4xl font-bold ${isRagging ? 'text-red-900 dark:text-red-100' : 'text-gray-900 dark:text-white'}`}>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
                   Provost Review
-                  {isRagging && <span className="ml-3 text-2xl">🚨</span>}
                 </h1>
-                <p className={`text-lg mt-1 ${isRagging ? 'text-red-700 dark:text-red-300' : 'text-gray-600 dark:text-gray-300'}`}>
-                  #{complaint.complaintId} • {isRagging ? 'CONFIDENTIAL RAGGING REPORT' : 'Standard Complaint'}
+                <p className="text-lg mt-1 text-gray-600 dark:text-gray-300">
+                  #{complaint.complaintId} • Standard Complaint Review
                 </p>
               </div>
             </div>
@@ -348,21 +339,6 @@ export default function ProvostComplaintDetailPage() {
               )}
             </div>
           </div>
-
-          {/* Critical Alert for Ragging */}
-          {isRagging && (
-            <div className="mt-6 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                <Shield className="h-5 w-5 text-red-600" />
-                <div>
-                  <h3 className="text-sm font-bold text-red-800 dark:text-red-300">CRITICAL: Ragging Incident</h3>
-                  <p className="text-xs text-red-700 dark:text-red-400">
-                    This complaint requires immediate attention. Maintain confidentiality and follow institutional anti-ragging protocols.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Main Content */}
@@ -381,12 +357,6 @@ export default function ProvostComplaintDetailPage() {
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getTypeColor(complaint.complaintType)}`}>
                       {complaint.complaintType?.replace('_', ' ')}
                     </span>
-                    {isRagging && (
-                      <span className="flex items-center space-x-1 text-red-600 text-xs">
-                        <Shield className="h-3 w-3" />
-                        <span>CONFIDENTIAL</span>
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
