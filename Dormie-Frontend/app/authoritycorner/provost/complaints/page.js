@@ -249,6 +249,58 @@ export default function ProvostComplaintsPage() {
     )
   }
 
+  // Show empty state when no complaints exist at all
+  if (!loading && complaints.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="container mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center">
+                <Shield className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Provost Complaint Review</h1>
+                <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">Student welfare and disciplinary oversight</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Empty State */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
+            <div className="text-center py-24">
+              <MessageSquare className="h-32 w-32 text-gray-300 dark:text-gray-600 mx-auto mb-8" />
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">No Complaints Currently</h2>
+              <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto text-lg mb-8">
+                There are currently no complaints submitted by students. This indicates a positive environment in the dormitory.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => {
+                    fetchComplaints()
+                    fetchStatistics()
+                  }}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  <Shield className="h-5 w-5" />
+                  <span>Refresh</span>
+                </button>
+                <button
+                  onClick={() => router.push("/authoritycorner/provost")}
+                  className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-xl font-semibold transition-all duration-300"
+                >
+                  <BarChart3 className="h-5 w-5" />
+                  <span>Go to Dashboard</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8">
