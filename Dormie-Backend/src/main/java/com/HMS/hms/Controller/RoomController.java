@@ -209,4 +209,57 @@ public class RoomController {
                     .body(new MessageResponse("Error fetching allocation status: " + e.getMessage()));
         }
     }
+
+ @GetMapping("/my-current-room")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> getCurrentRoom() {
+        try {
+            // Get the authenticated user's details
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            Long userId = userDetails.getId();
+
+            // Get student's current room assignment
+            Optional<StudentRoom> studentRoomOpt = studentRoomService.getStudentRoomByUserId(userId);
+            
+            if (studentRoomOpt.isPresent()) {
+                StudentRoom studentRoom = studentRoomOpt.get();
+                // Return just the room ID to avoid potential serialization issues
+                return ResponseEntity.ok().body(studentRoom.getRoomId());
+            } else {
+                return ResponseEntity.ok().body("No room assignment found");
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Failed to retrieve current room: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get list of available rooms for room change
+     * Shows rooms that have available capacity and are suitable for the student
+     * 
+     * @return Response with list of available rooms
+     */
+    @GetMapping("/available-for-change")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> getAvailableRoomsForChange() {
+        try {
+            // Get all rooms and filter for availability
+            List<RoomDTO> allRooms = roomService.getAllRooms();
+            List<RoomDTO> availableRooms = allRooms.stream()
+                    .filter(room -> {
+                        // Check if room has capacity using the DTO's method
+                        return room.hasSpace();
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(availableRooms);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Failed to retrieve available rooms: " + e.getMessage()));
+        }
+    }
 }
