@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User, FileText, DollarSign, LogOut, X, Menu, MessageSquare, AlertTriangle, Search, UserCheck, Home } from "lucide-react"
+import { User, FileText, DollarSign, LogOut, X, Menu, MessageSquare, AlertTriangle, Search, UserCheck, Home, ChefHat } from "lucide-react"
 
 export default function StudentsCorner({ children }) {
   const pathname = usePathname()
@@ -63,6 +63,12 @@ export default function StudentsCorner({ children }) {
       label: "Room Change",
       icon: Home,
       active: pathname === "/studentscorner/room-change",
+    },
+    {
+      href: "/studentscorner/mess-manager",
+      label: "Mess Manager",
+      icon: ChefHat,
+      active: pathname.startsWith("/studentscorner/mess-manager"),
     },
 
   ]

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User, FileText, DollarSign, Settings, LogOut, Menu, X, Crown, Home, MessageSquare } from "lucide-react"
+import { User, FileText, DollarSign, Settings, LogOut, Menu, X, Crown, Home, MessageSquare, ChefHat } from "lucide-react"
 
 export default function ProvostLayout({ children }) {
   const pathname = usePathname()
@@ -69,6 +69,12 @@ export default function ProvostLayout({ children }) {
       label: "Room Change Requests",
       icon: Home,
       active: pathname === "/authoritycorner/provost/room-change-applications",
+    },
+    {
+      href: "/authoritycorner/provost/mess-manager",
+      label: "Mess Manager",
+      icon: ChefHat,
+      active: pathname.startsWith("/authoritycorner/provost/mess-manager"),
     },
   ]
 
