@@ -81,8 +81,8 @@ public class HallApplicationService {
         Long studentId = student.getStudentId(); // Extract student ID from database
 
         // Check if student already has a PENDING application (prevents duplicate active applications)
-        Optional<HallApplication> existingApplication = hallApplicationRepo.findByUserId(userId);
-        if (existingApplication.isPresent() && "PENDING".equalsIgnoreCase(existingApplication.get().getApplicationStatus())) {
+        List<HallApplication> pendingApplications = hallApplicationRepo.findByUserIdAndApplicationStatus(userId, "PENDING");
+        if (!pendingApplications.isEmpty()) {
             throw new IllegalArgumentException("You already have a pending hall application. Please wait for it to be processed.");
         }
 
@@ -282,11 +282,40 @@ public class HallApplicationService {
     }
 
     /**
-     * Retrieves a single HallApplication entity by user ID.
+     * Retrieves the most relevant HallApplication entity by user ID.
+     * Priority: PENDING applications first, then most recent application.
      * @param userId The ID of the user.
-     * @return Optional containing the HallApplication entity if found.
+     * @return Optional containing the most relevant HallApplication entity if found.
      */
     public Optional<HallApplication> getHallApplicationByUserId(Long userId) {
-        return hallApplicationRepo.findByUserId(userId);
+        // First, check for PENDING applications
+        List<HallApplication> pendingApplications = hallApplicationRepo.findByUserIdAndApplicationStatus(userId, "PENDING");
+        if (!pendingApplications.isEmpty()) {
+            // Return the most recent pending application (if multiple exist, though this shouldn't happen)
+            return Optional.of(pendingApplications.stream()
+                    .max((a1, a2) -> a1.getApplicationDate().compareTo(a2.getApplicationDate()))
+                    .orElse(pendingApplications.get(0)));
+        }
+        
+        // If no pending applications, get all applications and return the most recent one
+        List<HallApplication> allApplications = hallApplicationRepo.findAllByUserId(userId);
+        if (allApplications.isEmpty()) {
+            return Optional.empty();
+        }
+        
+        // Return the most recent application
+        return Optional.of(allApplications.stream()
+                .max((a1, a2) -> a1.getApplicationDate().compareTo(a2.getApplicationDate()))
+                .orElse(allApplications.get(0)));
+    }
+
+    /**
+     * Retrieves all HallApplication entities for a user ID.
+     * Used for debugging and comprehensive status checks.
+     * @param userId The ID of the user.
+     * @return List of all HallApplication entities for the user.
+     */
+    public List<HallApplication> getAllApplicationsByUserId(Long userId) {
+        return hallApplicationRepo.findAllByUserId(userId);
     }
 }

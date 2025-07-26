@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -233,6 +234,32 @@ public class RoomController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MessageResponse("Failed to retrieve current room: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get room assignment for a specific student (for provost use)
+     * 
+     * @param studentId the student ID to get room assignment for
+     * @return Response with room assignment or "Not Assigned"
+     */
+    @GetMapping("/student-room/{studentId}")
+    @PreAuthorize("hasRole('PROVOST')")
+    public ResponseEntity<?> getStudentRoom(@PathVariable Long studentId) {
+        try {
+            // Get student room assignment
+            List<StudentRoom> studentRooms = studentRoomService.getStudentRoomsByStudentId(studentId);
+            
+            if (!studentRooms.isEmpty()) {
+                // Return the first room assignment (assuming one room per student)
+                return ResponseEntity.ok().body(studentRooms.get(0).getRoomId());
+            } else {
+                return ResponseEntity.ok().body("Not Assigned");
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Failed to retrieve student room: " + e.getMessage()));
         }
     }
 

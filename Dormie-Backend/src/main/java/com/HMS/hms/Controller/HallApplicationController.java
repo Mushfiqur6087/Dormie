@@ -175,12 +175,55 @@ public class HallApplicationController {
             Optional<HallApplication> application = hallApplicationService.getHallApplicationByUserId(userId);
             if (application.isPresent()) {
                 String status = application.get().getApplicationStatus();
+                logger.info("Found application for user {}: status = {}, applicationId = {}, date = {}", 
+                    userId, status, application.get().getApplicationId(), application.get().getApplicationDate());
                 return ResponseEntity.ok(new MessageResponse("Application status: " + status));
             } else {
+                logger.info("No application found for user {}", userId);
                 return ResponseEntity.ok(new MessageResponse("no application"));
             }
         } catch (Exception e) {
             logger.error("Error fetching application status for student ID {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new MessageResponse("An unexpected error occurred: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Debug endpoint to get all applications for the current student.
+     * This can help debug issues with multiple applications.
+     * @return List of all applications with their statuses.
+     */
+    @GetMapping("/debug/all")
+    @PreAuthorize("hasRole('STUDENT')") // Only logged-in students can check their applications
+    public ResponseEntity<?> getAllApplicationsDebug() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof UserDetailsImpl)) {
+            logger.warn("Unauthorized attempt to get applications debug: No valid authentication found.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("Authentication required. Please log in as a student."));
+        }
+        
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+
+        try {
+            // Get all applications for this user
+            List<HallApplication> allApplications = hallApplicationService.getAllApplicationsByUserId(userId);
+            
+            if (allApplications.isEmpty()) {
+                return ResponseEntity.ok(new MessageResponse("No applications found"));
+            }
+            
+            StringBuilder response = new StringBuilder("Found " + allApplications.size() + " applications: ");
+            for (HallApplication app : allApplications) {
+                response.append("ID=").append(app.getApplicationId())
+                       .append(" Status=").append(app.getApplicationStatus())
+                       .append(" Date=").append(app.getApplicationDate())
+                       .append("; ");
+            }
+            
+            return ResponseEntity.ok(new MessageResponse(response.toString()));
+        } catch (Exception e) {
+            logger.error("Error fetching all applications for student ID {}: {}", userId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new MessageResponse("An unexpected error occurred: " + e.getMessage()));
         }
     }

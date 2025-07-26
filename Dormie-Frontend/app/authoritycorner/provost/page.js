@@ -21,6 +21,7 @@ export default function ProvostDashboard() {
     totalStudents: 0
   })
   const [students, setStudents] = useState([])
+  const [residentStudents, setResidentStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const router = useRouter()
@@ -53,6 +54,37 @@ export default function ProvostDashboard() {
         const studentsData = await studentsResponse.json()
         
         setStudents(studentsData)
+        
+        // Filter resident students and fetch their room assignments
+        const residentStudentsList = studentsData.filter(student => student.residencyStatus === 'resident')
+        
+        // Fetch room assignments for each resident student
+        const residentWithRooms = await Promise.all(
+          residentStudentsList.map(async (student) => {
+            try {
+              const roomResponse = await fetch(createApiUrl(`/api/rooms/student-room/${student.studentId}`), { headers })
+              let roomNumber = "Not Assigned"
+              
+              if (roomResponse.ok) {
+                const roomData = await roomResponse.text()
+                roomNumber = roomData || "Not Assigned"
+              }
+              
+              return {
+                ...student,
+                roomNumber: roomNumber
+              }
+            } catch (error) {
+              console.error(`Error fetching room for student ${student.studentId}:`, error)
+              return {
+                ...student,
+                roomNumber: "Not Assigned"
+              }
+            }
+          })
+        )
+        
+        setResidentStudents(residentWithRooms)
         
         // Calculate statistics
         setStats({
@@ -197,6 +229,88 @@ export default function ProvostDashboard() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Resident Students with Room Assignments */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                <Home className="h-6 w-6 mr-3 text-green-600" />
+                Resident Students & Room Assignments
+              </h2>
+              <div className="text-right">
+                <p className="text-lg font-bold text-green-600">{residentStudents.length}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Resident Students</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              {residentStudents.length === 0 ? (
+                <div className="text-center py-8">
+                  <Home className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Resident Students</h3>
+                  <p className="text-gray-500 dark:text-gray-400">No students are currently registered as residents.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {residentStudents.map((student, index) => (
+                    <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                            <Users className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              {`${student.firstName || ''} ${student.lastName || ''}`.trim() || 'N/A'}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              ID: {student.studentId || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Home className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Room</span>
+                          </div>
+                          <span className={`text-sm font-medium px-2 py-1 rounded-full ${
+                            student.roomNumber && student.roomNumber !== 'Not Assigned'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}>
+                            {student.roomNumber || 'Not Assigned'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Building className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Department</span>
+                          </div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {student.department || 'N/A'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Batch</span>
+                          </div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {student.batch || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </>
