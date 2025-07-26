@@ -64,9 +64,9 @@ export default function ProvostLayout({ children }) {
       icon: Home,
       active: pathname === "/authoritycorner/provost/setrooms",
     },
-     {
+    {
       href: "/authoritycorner/provost/room-change-applications",
-      label: "Room Change Requests",
+      label: "Room Change",
       icon: Home,
       active: pathname === "/authoritycorner/provost/room-change-applications",
     },
