@@ -2,20 +2,22 @@ package com.HMS.hms.DTO;
 
 /**
  * DTO for unassigned student information
- * Contains only userId and studentId for room assignment purposes
+ * Contains userId, studentId, and batch for room assignment purposes
  */
 public class UnassignedStudentDTO {
     
     private Long userId;
     private Long studentId;
+    private Integer batch;
 
     // Default constructor
     public UnassignedStudentDTO() {}
 
     // Constructor
-    public UnassignedStudentDTO(Long userId, Long studentId) {
+    public UnassignedStudentDTO(Long userId, Long studentId, Integer batch) {
         this.userId = userId;
         this.studentId = studentId;
+        this.batch = batch;
     }
 
     // Getters and Setters
@@ -35,11 +37,20 @@ public class UnassignedStudentDTO {
         this.studentId = studentId;
     }
 
+    public Integer getBatch() {
+        return batch;
+    }
+
+    public void setBatch(Integer batch) {
+        this.batch = batch;
+    }
+
     @Override
     public String toString() {
         return "UnassignedStudentDTO{" +
                 "userId=" + userId +
                 ", studentId=" + studentId +
+                ", batch=" + batch +
                 '}';
     }
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Home, AlertCircle, Users, Building, Eye, UserPlus, ArrowRight } from "lucide-react"
+import { Home, AlertCircle, Users, Building, Eye, UserPlus, ArrowRight, Shuffle } from "lucide-react"
 import { createApiUrl } from "../../../../lib/api"
 
 export default function SetRooms() {
@@ -16,6 +16,12 @@ export default function SetRooms() {
   const [selectedRoom, setSelectedRoom] = useState("")
   const [assigning, setAssigning] = useState(false)
   const [assignmentMessage, setAssignmentMessage] = useState("")
+  
+  // Random assignment states
+  const [probability, setProbability] = useState(0.5)
+  const [randomAssigning, setRandomAssigning] = useState(false)
+  const [randomAssignmentMessage, setRandomAssignmentMessage] = useState("")
+  
   const router = useRouter()
 
   const fetchUnassignedStudents = useCallback(async () => {
@@ -155,6 +161,50 @@ export default function SetRooms() {
       setAssignmentMessage(`Network error: ${err.message}`)
     } finally {
       setAssigning(false)
+    }
+  }
+
+  const handleRandomAssignment = async () => {
+    setRandomAssigning(true)
+    setRandomAssignmentMessage("")
+
+    const jwtToken = localStorage.getItem("jwtToken")
+    if (!jwtToken) {
+      setRandomAssignmentMessage("Authentication required. Please log in.")
+      setRandomAssigning(false)
+      return
+    }
+
+    const requestBody = {
+      probability: probability
+    }
+
+    const authHeaders = {
+      Authorization: `Bearer ${jwtToken}`,
+      "Content-Type": "application/json",
+    }
+
+    try {
+      const response = await fetch(createApiUrl("/api/rooms/assign-random"), {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify(requestBody),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setRandomAssignmentMessage(result.message || "Random assignment completed successfully!")
+        // Refresh data
+        fetchRooms()
+        fetchUnassignedStudents()
+      } else {
+        const errorText = await response.text()
+        setRandomAssignmentMessage(`Failed to perform random assignment: ${errorText || response.statusText}`)
+      }
+    } catch (err) {
+      setRandomAssignmentMessage(`Network error: ${err.message}`)
+    } finally {
+      setRandomAssigning(false)
     }
   }
 
@@ -380,7 +430,7 @@ export default function SetRooms() {
                   <option value="">Select a student...</option>
                   {unassignedStudents.map((student) => (
                     <option key={student.userId} value={student.userId}>
-                      Student ID: {student.studentId}
+                      Student ID: {student.studentId} {student.batch ? `(Batch: ${student.batch})` : ''}
                     </option>
                   ))}
                 </select>
@@ -462,6 +512,114 @@ export default function SetRooms() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Random Assignment Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <Shuffle className="h-6 w-6 mr-3 text-orange-600" />
+          Assign Rooms (Random)
+        </h2>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Probability Input */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Batch Pairing Probability</h3>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-4">
+                <label htmlFor="probability" className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[100px]">
+                  Probability:
+                </label>
+                <input
+                  id="probability"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={probability}
+                  onChange={(e) => setProbability(parseFloat(e.target.value) || 0)}
+                  className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="0.5"
+                />
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="mb-2">
+                  <strong>Probability Range:</strong> 0.0 to 1.0
+                </p>
+                <p className="mb-2">
+                  <strong>0.0:</strong> No batch pairing - completely random assignment
+                </p>
+                <p className="mb-2">
+                  <strong>1.0:</strong> Maximum batch pairing - always try to pair same batch students
+                </p>
+                <p>
+                  <strong>Current ({probability}):</strong> {
+                    probability === 0 ? "No batch pairing" :
+                    probability < 0.3 ? "Low batch pairing preference" :
+                    probability < 0.7 ? "Moderate batch pairing preference" :
+                    probability < 1 ? "High batch pairing preference" :
+                    "Maximum batch pairing preference"
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Random Assignment Button and Info */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Random Assignment</h3>
+            <div className="space-y-4">
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-2">How it works:</h4>
+                <ul className="text-sm text-orange-700 dark:text-orange-300 space-y-1">
+                  <li>• Gets all unassigned students and available rooms</li>
+                  <li>• For each student, generates a random number (0-1)</li>
+                  <li>• If number ≤ probability: tries to pair with same batch student</li>
+                  <li>• If pairing fails or number &gt; probability: assigns to random room</li>
+                  <li>• Continues until all students assigned or rooms full</li>
+                </ul>
+              </div>
+
+              <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                <span>{unassignedStudents.length} unassigned students</span>
+                <span>{availableRooms.length} available rooms</span>
+              </div>
+
+              <button
+                onClick={handleRandomAssignment}
+                disabled={randomAssigning || unassignedStudents.length === 0 || availableRooms.length === 0}
+                className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+                  randomAssigning || unassignedStudents.length === 0 || availableRooms.length === 0
+                    ? "bg-gray-400 cursor-not-allowed text-white"
+                    : "bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                }`}
+              >
+                {randomAssigning ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Assigning Rooms...</span>
+                  </>
+                ) : (
+                  <>
+                    <Shuffle className="h-4 w-4" />
+                    <span>Assign Rooms</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+
+              {randomAssignmentMessage && (
+                <div className={`p-3 rounded-lg text-sm max-h-48 overflow-y-auto ${
+                  randomAssignmentMessage.includes("completed") || randomAssignmentMessage.includes("successfully") 
+                    ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300"
+                    : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+                }`}>
+                  <pre className="whitespace-pre-wrap text-xs">{randomAssignmentMessage}</pre>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

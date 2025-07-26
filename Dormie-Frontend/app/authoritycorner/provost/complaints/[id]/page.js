@@ -155,8 +155,12 @@ export default function ProvostComplaintDetailPage() {
 
   const getTypeIcon = (type) => {
     switch (type?.toLowerCase()) {
+      case "ragging":
+        return <Shield className="h-6 w-6 text-red-500" />
       case "maintenance":
         return <AlertTriangle className="h-6 w-6 text-orange-500" />
+      case "lost_and_found":
+        return <MessageSquare className="h-6 w-6 text-blue-500" />
       case "general":
         return <MessageSquare className="h-6 w-6 text-gray-500" />
       default:
@@ -166,8 +170,12 @@ export default function ProvostComplaintDetailPage() {
 
   const getTypeColor = (type) => {
     switch (type?.toLowerCase()) {
+      case "ragging":
+        return "bg-red-100 text-red-800 border-red-200"
       case "maintenance":
         return "bg-orange-100 text-orange-800 border-orange-200"
+      case "lost_and_found":
+        return "bg-blue-100 text-blue-800 border-blue-200"
       case "general":
         return "bg-gray-100 text-gray-800 border-gray-200"
       default:
@@ -261,6 +269,7 @@ export default function ProvostComplaintDetailPage() {
   }
 
   const priority = getPriorityLevel(complaint)
+  const isRagging = complaint.complaintType === 'RAGGING'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">

@@ -1,7 +1,10 @@
 package com.HMS.hms.Controller;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -145,9 +148,9 @@ public class RoomController {
                 .filter(student -> !studentRoomService.isUserAssignedToRoom(student.getUserId()))
                 .collect(Collectors.toList());
             
-            // Convert to DTO with only userId and studentId
+            // Convert to DTO with userId, studentId, and batch
             List<UnassignedStudentDTO> unassignedStudentDTOs = unassignedStudents.stream()
-                .map(student -> new UnassignedStudentDTO(student.getUserId(), student.getStudentId()))
+                .map(student -> new UnassignedStudentDTO(student.getUserId(), student.getStudentId(), student.getBatch()))
                 .collect(Collectors.toList());
             
             return new ResponseEntity<>(unassignedStudentDTOs, HttpStatus.OK);
@@ -289,4 +292,165 @@ public class RoomController {
                     .body(new MessageResponse("Failed to retrieve available rooms: " + e.getMessage()));
         }
     }
+
+    /**
+     * Randomly assign rooms to all unassigned students with batch pairing probability
+     * 
+     * @param probability the probability (0-1) of trying to pair students from same batch
+     * @return Response with assignment results
+     */
+    @PostMapping("/assign-random")
+    @PreAuthorize("hasRole('PROVOST')")
+    public ResponseEntity<?> assignRoomsRandomly(@RequestBody Map<String, Object> request) {
+        try {
+            // Extract probability from request
+            Double probability = 0.0;
+            if (request.containsKey("probability")) {
+                Object probObj = request.get("probability");
+                if (probObj instanceof Number number) {
+                    probability = number.doubleValue();
+                } else if (probObj instanceof String stringValue) {
+                    probability = Double.valueOf(stringValue);
+                }
+            }
+
+            // Validate probability range
+            if (probability < 0.0 || probability > 1.0) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Probability must be between 0 and 1"));
+            }
+
+            // Get all unassigned students
+            List<Students> residentStudents = studentsService.findByResidencyStatus("resident");
+            List<Students> unassignedStudents = residentStudents.stream()
+                .filter(student -> !studentRoomService.isUserAssignedToRoom(student.getUserId()))
+                .collect(Collectors.toList());
+
+            if (unassignedStudents.isEmpty()) {
+                return ResponseEntity.ok(new MessageResponse("No unassigned students found"));
+            }
+
+            // Get all available rooms (with space)
+            List<RoomDTO> allRooms = roomService.getAllRooms();
+            List<RoomDTO> availableRooms = allRooms.stream()
+                .filter(room -> room.hasSpace())
+                .collect(Collectors.toList());
+
+            if (availableRooms.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("No available rooms with space"));
+            }
+
+            // Random assignment with batch pairing
+            Random random = new Random();
+            List<Students> studentsToAssign = new ArrayList<>(unassignedStudents);
+            List<Students> assignedStudents = new ArrayList<>();
+            List<String> assignmentResults = new ArrayList<>();
+
+            while (!studentsToAssign.isEmpty() && !availableRooms.isEmpty()) {
+                Students currentStudent = studentsToAssign.remove(0);
+                boolean assignedWithBatchMate = false;
+
+                // Try batch pairing with given probability
+                if (random.nextDouble() <= probability && currentStudent.getBatch() != null) {
+                    // Find another student from same batch
+                    Students batchMate = studentsToAssign.stream()
+                        .filter(s -> currentStudent.getBatch().equals(s.getBatch()))
+                        .findFirst()
+                        .orElse(null);
+
+                    if (batchMate != null) {
+                        // Find a room with capacity for at least 2 students
+                        RoomDTO suitableRoom = availableRooms.stream()
+                            .filter(room -> (room.getTotalCapacity() - room.getCurrentStudent()) >= 2)
+                            .findFirst()
+                            .orElse(null);
+
+                        if (suitableRoom != null) {
+                            // Assign both students to the same room
+                            assignStudent(currentStudent, suitableRoom.getRoomNo());
+                            assignStudent(batchMate, suitableRoom.getRoomNo());
+                            
+                            studentsToAssign.remove(batchMate);
+                            assignedStudents.add(currentStudent);
+                            assignedStudents.add(batchMate);
+                            
+                            assignmentResults.add("Students " + currentStudent.getStudentId() + 
+                                " and " + batchMate.getStudentId() + " (Batch " + currentStudent.getBatch() + 
+                                ") assigned to Room " + suitableRoom.getRoomNo());
+                            
+                            // Update room capacity - increment by 2
+                            roomService.incrementCurrentStudentCount(suitableRoom.getRoomNo());
+                            roomService.incrementCurrentStudentCount(suitableRoom.getRoomNo());
+                            suitableRoom.setCurrentStudent(suitableRoom.getCurrentStudent() + 2);
+                            
+                            // Remove room from available list if full
+                            if (!suitableRoom.hasSpace()) {
+                                availableRooms.remove(suitableRoom);
+                            }
+                            
+                            assignedWithBatchMate = true;
+                        }
+                    }
+                }
+
+                // If no batch pairing happened, assign to random available room
+                if (!assignedWithBatchMate && !availableRooms.isEmpty()) {
+                    RoomDTO randomRoom = availableRooms.get(random.nextInt(availableRooms.size()));
+                    
+                    assignStudent(currentStudent, randomRoom.getRoomNo());
+                    assignedStudents.add(currentStudent);
+                    
+                    assignmentResults.add("Student " + currentStudent.getStudentId() + 
+                        " assigned to Room " + randomRoom.getRoomNo());
+                    
+                    // Update room capacity - increment by 1
+                    roomService.incrementCurrentStudentCount(randomRoom.getRoomNo());
+                    randomRoom.setCurrentStudent(randomRoom.getCurrentStudent() + 1);
+                    
+                    // Remove room from available list if full
+                    if (!randomRoom.hasSpace()) {
+                        availableRooms.remove(randomRoom);
+                    }
+                }
+            }
+
+            // Prepare response message
+            StringBuilder responseMessage = new StringBuilder();
+            responseMessage.append("Random assignment completed!\n");
+            responseMessage.append("Assigned ").append(assignedStudents.size()).append(" students.\n");
+            if (!studentsToAssign.isEmpty()) {
+                responseMessage.append(studentsToAssign.size()).append(" students could not be assigned (no available rooms).\n");
+            }
+            responseMessage.append("\nAssignment Details:\n");
+            assignmentResults.forEach(result -> responseMessage.append("- ").append(result).append("\n"));
+
+            return ResponseEntity.ok(new MessageResponse(responseMessage.toString()));
+
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Invalid probability format: " + e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error during random assignment: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Helper method to assign a student to a room
+     */
+    private void assignStudent(Students student, String roomNo) {
+        try {
+            studentRoomService.assignStudentToRoom(
+                student.getUserId(), 
+                student.getStudentId(), 
+                roomNo
+            );
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Failed to assign student " + student.getStudentId() + 
+                " to room " + roomNo + ": " + e.getMessage(), e);
+        }
+    }
 }
+
+
