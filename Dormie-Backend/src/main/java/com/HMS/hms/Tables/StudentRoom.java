@@ -17,6 +17,7 @@ public class StudentRoom {
 
     @ManyToOne
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Users user;
 
     @Column(name = "student_id", nullable = false)

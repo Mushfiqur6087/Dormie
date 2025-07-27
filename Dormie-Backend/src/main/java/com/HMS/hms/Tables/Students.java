@@ -1,7 +1,14 @@
 package com.HMS.hms.Tables;
 
-import jakarta.persistence.*;
 import java.time.LocalDate;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "students")
@@ -13,6 +20,7 @@ public class Students {
     @OneToOne
     @MapsId // Use user.userId as this entity's ID
     @JoinColumn(name = "user_id") // Foreign key to users.userId
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Users user;
 
     @Column(name = "student_id", unique = true, nullable = false)
