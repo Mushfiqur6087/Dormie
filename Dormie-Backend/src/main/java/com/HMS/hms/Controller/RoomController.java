@@ -346,8 +346,30 @@ public class RoomController {
             List<Students> studentsToAssign = new ArrayList<>(unassignedStudents);
             List<Students> assignedStudents = new ArrayList<>();
             List<String> assignmentResults = new ArrayList<>();
+            
+            // Safety mechanism to prevent infinite loops
+            int maxIterations = studentsToAssign.size() * 3; // Allow some retries
+            int iterationCount = 0;
+            
+            // Refresh room data every 10 assignments to prevent stale data
+            int refreshCounter = 0;
 
-            while (!studentsToAssign.isEmpty() && !availableRooms.isEmpty()) {
+            while (!studentsToAssign.isEmpty() && !availableRooms.isEmpty() && iterationCount < maxIterations) {
+                iterationCount++;
+                
+                // Periodically refresh available rooms list to prevent stale data
+                if (refreshCounter % 10 == 0 && refreshCounter > 0) {
+                    List<RoomDTO> freshRooms = roomService.getAllRooms();
+                    availableRooms = freshRooms.stream()
+                        .filter(room -> room.hasSpace())
+                        .collect(Collectors.toList());
+                }
+                refreshCounter++;
+                
+                if (availableRooms.isEmpty()) {
+                    break; // No more available rooms
+                }
+                
                 Students currentStudent = studentsToAssign.remove(0);
                 boolean assignedWithBatchMate = false;
 
@@ -367,29 +389,59 @@ public class RoomController {
                             .orElse(null);
 
                         if (suitableRoom != null) {
-                            // Assign both students to the same room
-                            assignStudent(currentStudent, suitableRoom.getRoomNo());
-                            assignStudent(batchMate, suitableRoom.getRoomNo());
-                            
-                            studentsToAssign.remove(batchMate);
-                            assignedStudents.add(currentStudent);
-                            assignedStudents.add(batchMate);
-                            
-                            assignmentResults.add("Students " + currentStudent.getStudentId() + 
-                                " and " + batchMate.getStudentId() + " (Batch " + currentStudent.getBatch() + 
-                                ") assigned to Room " + suitableRoom.getRoomNo());
-                            
-                            // Update room capacity - increment by 2
-                            roomService.incrementCurrentStudentCount(suitableRoom.getRoomNo());
-                            roomService.incrementCurrentStudentCount(suitableRoom.getRoomNo());
-                            suitableRoom.setCurrentStudent(suitableRoom.getCurrentStudent() + 2);
-                            
-                            // Remove room from available list if full
-                            if (!suitableRoom.hasSpace()) {
+                            // Double-check room capacity by refreshing from database
+                            Optional<RoomDTO> freshRoomOpt = roomService.getRoomByRoomNo(suitableRoom.getRoomNo());
+                            if (freshRoomOpt.isPresent()) {
+                                RoomDTO freshRoom = freshRoomOpt.get();
+                                if ((freshRoom.getTotalCapacity() - freshRoom.getCurrentStudent()) >= 2) {
+                                    // Update local DTO with fresh data
+                                    suitableRoom.setCurrentStudent(freshRoom.getCurrentStudent());
+                                    
+                                    try {
+                                        // Assign both students to the same room
+                                        assignStudent(currentStudent, suitableRoom.getRoomNo());
+                                        assignStudent(batchMate, suitableRoom.getRoomNo());
+                                        
+                                        studentsToAssign.remove(batchMate);
+                                        assignedStudents.add(currentStudent);
+                                        assignedStudents.add(batchMate);
+                                        
+                                        assignmentResults.add("Students " + currentStudent.getStudentId() + 
+                                            " and " + batchMate.getStudentId() + " (Batch " + currentStudent.getBatch() + 
+                                            ") assigned to Room " + suitableRoom.getRoomNo());
+                                        
+                                        // Update room capacity - increment by 1 for each student (just like normal assignment)
+                                        roomService.incrementCurrentStudentCount(suitableRoom.getRoomNo());
+                                        roomService.incrementCurrentStudentCount(suitableRoom.getRoomNo());
+                                        
+                                        // Update local DTO to match database state
+                                        suitableRoom.setCurrentStudent(suitableRoom.getCurrentStudent() + 2);
+                                        
+                                        // Remove room from available list if full
+                                        if (!suitableRoom.hasSpace()) {
+                                            availableRooms.remove(suitableRoom);
+                                        }
+                                        
+                                        assignedWithBatchMate = true;
+                                    } catch (RuntimeException e) {
+                                        // If batch assignment fails, put students back to be assigned individually
+                                        assignmentResults.add("Batch assignment failed for students " + 
+                                            currentStudent.getStudentId() + " and " + batchMate.getStudentId() + 
+                                            ": " + e.getMessage() + ". Will attempt individual assignment.");
+                                        // Current student will be processed individually in the next if block
+                                        // Batch mate stays in the list to be processed later
+                                    }
+                                } else {
+                                    // Room no longer has space for 2 students, remove from available list
+                                    suitableRoom.setCurrentStudent(freshRoom.getCurrentStudent());
+                                    if (!suitableRoom.hasSpace()) {
+                                        availableRooms.remove(suitableRoom);
+                                    }
+                                }
+                            } else {
+                                // Room no longer exists, remove from available list
                                 availableRooms.remove(suitableRoom);
                             }
-                            
-                            assignedWithBatchMate = true;
                         }
                     }
                 }
@@ -398,19 +450,50 @@ public class RoomController {
                 if (!assignedWithBatchMate && !availableRooms.isEmpty()) {
                     RoomDTO randomRoom = availableRooms.get(random.nextInt(availableRooms.size()));
                     
-                    assignStudent(currentStudent, randomRoom.getRoomNo());
-                    assignedStudents.add(currentStudent);
-                    
-                    assignmentResults.add("Student " + currentStudent.getStudentId() + 
-                        " assigned to Room " + randomRoom.getRoomNo());
-                    
-                    // Update room capacity - increment by 1
-                    roomService.incrementCurrentStudentCount(randomRoom.getRoomNo());
-                    randomRoom.setCurrentStudent(randomRoom.getCurrentStudent() + 1);
-                    
-                    // Remove room from available list if full
-                    if (!randomRoom.hasSpace()) {
+                    // Double-check room capacity by refreshing from database
+                    Optional<RoomDTO> freshRoomOpt = roomService.getRoomByRoomNo(randomRoom.getRoomNo());
+                    if (freshRoomOpt.isPresent()) {
+                        RoomDTO freshRoom = freshRoomOpt.get();
+                        if (freshRoom.hasSpace()) {
+                            // Update local DTO with fresh data
+                            randomRoom.setCurrentStudent(freshRoom.getCurrentStudent());
+                            
+                            try {
+                                assignStudent(currentStudent, randomRoom.getRoomNo());
+                                assignedStudents.add(currentStudent);
+                                
+                                assignmentResults.add("Student " + currentStudent.getStudentId() + 
+                                    " assigned to Room " + randomRoom.getRoomNo());
+                                
+                                // Update room capacity - increment by 1 (same as normal assignment)
+                                roomService.incrementCurrentStudentCount(randomRoom.getRoomNo());
+                                
+                                // Update local DTO to match database state
+                                randomRoom.setCurrentStudent(randomRoom.getCurrentStudent() + 1);
+                                
+                                // Remove room from available list if full
+                                if (!randomRoom.hasSpace()) {
+                                    availableRooms.remove(randomRoom);
+                                }
+                            } catch (RuntimeException e) {
+                                // If assignment fails, log and put student back
+                                assignmentResults.add("Failed to assign student " + currentStudent.getStudentId() + 
+                                    " to Room " + randomRoom.getRoomNo() + ": " + e.getMessage());
+                                studentsToAssign.add(0, currentStudent);
+                                // Remove the problematic room from available list
+                                availableRooms.remove(randomRoom);
+                            }
+                        } else {
+                            // Room became full, remove from available list and try again
+                            availableRooms.remove(randomRoom);
+                            // Put student back to be processed again
+                            studentsToAssign.add(0, currentStudent);
+                        }
+                    } else {
+                        // Room no longer exists, remove from available list
                         availableRooms.remove(randomRoom);
+                        // Put student back to be processed again
+                        studentsToAssign.add(0, currentStudent);
                     }
                 }
             }
@@ -420,7 +503,16 @@ public class RoomController {
             responseMessage.append("Random assignment completed!\n");
             responseMessage.append("Assigned ").append(assignedStudents.size()).append(" students.\n");
             if (!studentsToAssign.isEmpty()) {
-                responseMessage.append(studentsToAssign.size()).append(" students could not be assigned (no available rooms).\n");
+                responseMessage.append(studentsToAssign.size()).append(" students could not be assigned");
+                if (iterationCount >= maxIterations) {
+                    responseMessage.append(" (reached maximum retry limit)");
+                } else if (availableRooms.isEmpty()) {
+                    responseMessage.append(" (no available rooms)");
+                }
+                responseMessage.append(".\n");
+            }
+            if (iterationCount >= maxIterations) {
+                responseMessage.append("Warning: Assignment process stopped due to safety limit to prevent infinite loops.\n");
             }
             responseMessage.append("\nAssignment Details:\n");
             assignmentResults.forEach(result -> responseMessage.append("- ").append(result).append("\n"));
@@ -438,9 +530,26 @@ public class RoomController {
 
     /**
      * Helper method to assign a student to a room
+     * This method performs the same validation as normal room assignment
      */
     private void assignStudent(Students student, String roomNo) {
         try {
+            // Validate student and room before assignment (same as normal assignment)
+            if (!"resident".equalsIgnoreCase(student.getResidencyStatus())) {
+                throw new RuntimeException("Only resident students can be assigned to rooms. Current status: " + student.getResidencyStatus());
+            }
+            
+            // Check if student already has a room assignment
+            if (studentRoomService.isUserAssignedToRoom(student.getUserId())) {
+                throw new RuntimeException("Student is already assigned to a room");
+            }
+            
+            // Check if room exists and has space
+            if (!roomService.canAccommodateStudent(roomNo)) {
+                throw new RuntimeException("Room " + roomNo + " cannot accommodate student (full or doesn't exist)");
+            }
+            
+            // Perform the assignment (same as normal assignment)
             studentRoomService.assignStudentToRoom(
                 student.getUserId(), 
                 student.getStudentId(), 
