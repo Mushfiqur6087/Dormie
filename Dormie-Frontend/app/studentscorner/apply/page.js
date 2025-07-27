@@ -54,12 +54,6 @@ export default function ApplyForm() {
   const [allocationStatusError, setAllocationStatusError] = useState(null)
   // --- END Allocation Status States ---
 
-  // --- States for Application Status Check ---
-  const [applicationStatus, setApplicationStatus] = useState(null)
-  const [loadingApplicationStatus, setLoadingApplicationStatus] = useState(true)
-  const [applicationStatusError, setApplicationStatusError] = useState(null)
-  // --- END Application Status States ---
-
   // --- Watch the radio button for conditional rendering ---
   // This will store "yes" or "no" (defaulting to "no" if not yet selected)
   const hasLocalRelative = watch("hasLocalRelative", "no")
@@ -167,67 +161,18 @@ export default function ApplyForm() {
     fetchAllocationStatus()
   }, []) // Empty dependency array ensures this runs once on mount
 
-  // --- useEffect for fetching Application Status ---
-  // Runs once on component mount to check if student has a pending application
-  useEffect(() => {
-    async function fetchApplicationStatus() {
-      const jwtToken = localStorage.getItem("jwtToken")
-      if (!jwtToken) {
-        setApplicationStatusError("Authentication required. Please log in.")
-        setLoadingApplicationStatus(false)
-        return
-      }
-
-      try {
-        setLoadingApplicationStatus(true)
-        setApplicationStatusError(null)
-
-        const response = await fetch(createApiUrl("/api/applications/getstatus"), {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-            "Content-Type": "application/json",
-          },
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const data = await response.json()
-        console.log("Application status API response:", data)
-        console.log("Application status message:", data.message)
-
-        if (data && data.message) {
-          setApplicationStatus(data.message)
-          console.log("Set applicationStatus to:", data.message)
-        } else {
-          throw new Error("Invalid response format from application status API")
-        }
-      } catch (error) {
-        console.error("Error fetching application status:", error)
-        setApplicationStatusError("Failed to check application status. Please try again.")
-      } finally {
-        setLoadingApplicationStatus(false)
-      }
-    }
-
-    fetchApplicationStatus()
-  }, []) // Empty dependency array ensures this runs once on mount
 
   // --- Handle Form Submission ---
   const onSubmit = async (data) => {
-    // --- Frontend Debouncing: Prevent multiple submissions ---
-    if (isSubmitting) return // If already submitting, do nothing
-    setIsSubmitting(true) // Set submitting state to true
-    setSubmissionMessage("") // Clear previous messages
-    setSubmissionError("") // Clear previous errors
-    // --- END Frontend Debouncing ---
+    if (isSubmitting) return
+    setIsSubmitting(true)
+    setSubmissionMessage("")
+    setSubmissionError("")
+  
 
     // Prepare JSON payload for the backend
     // Extract college location from the college selection (format: "College Name, Location")
     const collegeLocation = data.college ? data.college.split(", ").pop() : ""
-    
     const applicationData = {
       college: data.college,
       collegeLocation: collegeLocation,
@@ -235,6 +180,7 @@ export default function ApplyForm() {
       district: data.district,
       postcode: data.postcode,
       hasLocalRelative: data.hasLocalRelative,
+      
     }
 
     // Conditionally add local relative address if 'yes' was selected and address is provided
@@ -276,38 +222,58 @@ export default function ApplyForm() {
       setSubmissionMessage(result.message || "Application submitted successfully!")
       // Optionally reset the form fields after successful submission
       reset() // Resets all fields managed by react-hook-form to their default values (or empty)
-      
-      // Refresh the application status after 1 second to show the updated status
-      setTimeout(async () => {
-        const jwtToken = localStorage.getItem("jwtToken")
-        if (jwtToken) {
-          try {
-            const response = await fetch(createApiUrl("/api/applications/getstatus"), {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${jwtToken}`,
-                "Content-Type": "application/json",
-              },
-            })
-            if (response.ok) {
-              const data = await response.json()
-              if (data && data.message) {
-                setApplicationStatus(data.message)
-                console.log("Refreshed applicationStatus to:", data.message)
-              }
-            }
-          } catch (error) {
-            console.error("Error refreshing application status:", error)
-            // Fallback to page reload if API call fails
-            window.location.reload()
-          }
-        }
-      }, 1000)
     } catch (error) {
       console.error("Error submitting application:", error)
       setSubmissionError("Application submission failed: " + (error.message || "Please try again."))
     } finally {
       setIsSubmitting(false) // Re-enable the submit button in all cases
+    }
+  }
+
+  // --- College Autocomplete State ---
+  const [collegeInput, setCollegeInput] = useState("")
+  const [filteredColleges, setFilteredColleges] = useState([])
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false)
+  const [highlightedCollegeIdx, setHighlightedCollegeIdx] = useState(-1)
+
+  // Update filteredColleges as user types
+  useEffect(() => {
+    if (!collegeInput) {
+      setFilteredColleges([])
+      setShowCollegeDropdown(false)
+      setHighlightedCollegeIdx(-1)
+      return
+    }
+    const input = collegeInput.trim().toLowerCase()
+    const filtered = allColleges.filter(
+      (college) =>
+        college.name.toLowerCase().startsWith(input) ||
+        (`${college.name}, ${college.location}`.toLowerCase().startsWith(input))
+    )
+    setFilteredColleges(filtered)
+    setShowCollegeDropdown(filtered.length > 0)
+    setHighlightedCollegeIdx(filtered.length > 0 ? 0 : -1)
+  }, [collegeInput, allColleges])
+
+  // Keyboard navigation for college dropdown
+  const handleCollegeInputKeyDown = (e) => {
+    if (!showCollegeDropdown || filteredColleges.length === 0) return
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      setHighlightedCollegeIdx((prev) => (prev + 1) % filteredColleges.length)
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      setHighlightedCollegeIdx((prev) => (prev - 1 + filteredColleges.length) % filteredColleges.length)
+    } else if (e.key === "Enter") {
+      if (highlightedCollegeIdx >= 0 && highlightedCollegeIdx < filteredColleges.length) {
+        const college = filteredColleges[highlightedCollegeIdx]
+        const value = `${college.name}, ${college.location}`
+        setCollegeInput(value)
+        setValue("college", value, { shouldValidate: true })
+        setShowCollegeDropdown(false)
+      }
+    } else if (e.key === "Escape") {
+      setShowCollegeDropdown(false)
     }
   }
 
@@ -327,27 +293,23 @@ export default function ApplyForm() {
         </div>
 
         {/* Loading Allocation Status */}
-        {(loadingAllocationStatus || loadingApplicationStatus) && (
+        {loadingAllocationStatus && (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 text-center">
             <div className="flex items-center justify-center mb-4">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
             </div>
-            <p className="text-lg text-gray-600 dark:text-gray-300">
-              {loadingAllocationStatus ? "Checking your allocation status..." : "Checking your application status..."}
-            </p>
+            <p className="text-lg text-gray-600 dark:text-gray-300">Checking your allocation status...</p>
           </div>
         )}
 
         {/* Allocation Status Error */}
-        {(allocationStatusError || applicationStatusError) && (
+        {allocationStatusError && (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-red-200 dark:border-red-800 text-center">
             <div className="flex items-center justify-center mb-4">
               <XCircle className="h-12 w-12 text-red-500" />
             </div>
             <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error</h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
-              {allocationStatusError || applicationStatusError}
-            </p>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">{allocationStatusError}</p>
             <button
               onClick={() => window.location.reload()}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
@@ -357,68 +319,30 @@ export default function ApplyForm() {
           </div>
         )}
 
-        {/* Show form only if student is "attached" and has no pending application */}
-        {!loadingAllocationStatus && !loadingApplicationStatus && !allocationStatusError && !applicationStatusError && (
+        {/* Show form only if student is "attached", otherwise show message */}
+        {!loadingAllocationStatus && !allocationStatusError && (
           <>
             {allocationStatus === "attached" ? (
-              <>
-                {/* Check if student has pending application */}
-                {applicationStatus && (applicationStatus.includes("Application status: PENDING") || applicationStatus.includes("PENDING")) ? (
-                  // Show message that student already applied and is waiting
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-orange-200 dark:border-orange-800 text-center">
-                    <div className="flex items-center justify-center mb-6">
-                      <AlertCircle className="h-16 w-16 text-orange-500" />
-                    </div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Application Already Submitted</h2>
-                    <div className="space-y-4 text-lg text-gray-600 dark:text-gray-300">
-                      <p className="mb-4">You have already submitted a hall seat application.</p>
-                      <p className="font-semibold text-orange-600 dark:text-orange-400">
-                        Status: PENDING
-                      </p>
-                      <p className="mt-4">
-                        Please wait for the Provost to review and approve or reject your application. 
-                        You cannot submit another application while one is pending.
-                      </p>
-                    </div>
-                    <div className="mt-8">
-                      <button
-                        onClick={() => router.push("/studentscorner")}
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
-                      >
-                        Return to Dashboard
-                      </button>
-                    </div>
+              // Show the full application form
+              <div>
+                {/* Status Messages */}
+                {submissionMessage && (
+                  <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center animate-fade-in">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mr-3 flex-shrink-0" />
+                    <span className="text-green-800 dark:text-green-300 font-medium">{submissionMessage}</span>
                   </div>
-                ) : (
-                  // Show the full application form for no application, rejected, or other statuses
-                  <div>
-                    {/* Show rejection notice if applicable */}
-                    {applicationStatus && (applicationStatus.includes("Application status: REJECTED") || applicationStatus.includes("REJECTED")) && (
-                      <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl flex items-center">
-                        <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mr-3 flex-shrink-0" />
-                        <div>
-                          <p className="text-yellow-800 dark:text-yellow-300 font-medium">Previous Application Rejected</p>
-                          <p className="text-yellow-700 dark:text-yellow-400 text-sm">Your previous application was rejected. You can submit a new application below.</p>
-                        </div>
-                      </div>
-                    )}
+                )}
 
-                    {/* Status Messages */}
-                    {submissionMessage && (
-                      <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center animate-fade-in">
-                        <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mr-3 flex-shrink-0" />
-                        <span className="text-green-800 dark:text-green-300 font-medium">{submissionMessage}</span>
-                      </div>
-                    )}
+                {submissionError && (
+                  <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center animate-fade-in">
+                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mr-3 flex-shrink-0" />
+                    <span className="text-red-800 dark:text-red-300 font-medium">{submissionError}</span>
+                  </div>
+                )}
 
-                    {submissionError && (
-                      <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center animate-fade-in">
-                        <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mr-3 flex-shrink-0" />
-                        <span className="text-red-800 dark:text-red-300 font-medium">{submissionError}</span>
-                      </div>
-                    )}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* Personal Information Section */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center mb-8">
@@ -566,20 +490,50 @@ export default function ApplyForm() {
                 </p>
               )}
               {!loadingColleges && !errorColleges && (
-                <select
-                  id="college"
-                  {...register("college", { required: "College is required" })}
-                  className={`w-full px-4 py-3 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                    errors.college ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                >
-                  <option value="">Select your College</option>
-                  {allColleges.map((college, index) => (
-                    <option key={`${college.id}-${index}`} value={`${college.name}, ${college.location}`}>
-                      {college.name}, {college.location}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="college"
+                    autoComplete="off"
+                    value={collegeInput}
+                    placeholder="Type your college name"
+                    className={`w-full px-4 py-3 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      errors.college ? "border-red-500" : "border-gray-300 dark:border-gray-600"
+                    } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                    {...register("college", { required: "College is required" })}
+                    onChange={(e) => {
+                      setCollegeInput(e.target.value)
+                      setValue("college", e.target.value)
+                    }}
+                    onFocus={() => setShowCollegeDropdown(filteredColleges.length > 0)}
+                    onBlur={() => setTimeout(() => setShowCollegeDropdown(false), 150)}
+                    onKeyDown={handleCollegeInputKeyDown}
+                  />
+                  {/* Dropdown */}
+                  {showCollegeDropdown && (
+                    <ul className="absolute z-10 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl mt-1 max-h-60 overflow-y-auto shadow-lg">
+                      {filteredColleges.map((college, idx) => (
+                        <li
+                          key={college.id || idx}
+                          className={`px-4 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 ${
+                            idx === highlightedCollegeIdx ? "bg-blue-100 dark:bg-blue-900" : ""
+                          }`}
+                          onMouseDown={() => {
+                            const value = `${college.name}, ${college.location}`
+                            setCollegeInput(value)
+                            setValue("college", value, { shouldValidate: true })
+                            setShowCollegeDropdown(false)
+                          }}
+                        >
+                          {college.name}, {college.location}
+                        </li>
+                      ))}
+                      {filteredColleges.length === 0 && (
+                        <li className="px-4 py-2 text-gray-500">No colleges found</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
               )}
               {errors.college && (
                 <p className="text-sm text-red-600 dark:text-red-400 flex items-center mt-1">
@@ -690,57 +644,54 @@ export default function ApplyForm() {
               )}
             </button>
           </div>
-                    </form>
-                  </div>
-                )}
-              </>
-            ) : (
-              // Show message when student is not "attached"
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-yellow-200 dark:border-yellow-800 text-center">
-                <div className="flex items-center justify-center mb-6">
-                  <XCircle className="h-16 w-16 text-yellow-500" />
-                </div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Application Not Available</h2>
-                <div className="space-y-4 text-lg text-gray-600 dark:text-gray-300">
-                  {allocationStatus && allocationStatus.includes("room assigned to") ? (
-                    <div>
-                      <p className="mb-4">You have already been assigned a room.</p>
-                      <p className="font-semibold text-green-600 dark:text-green-400">
-                        {allocationStatus}
-                      </p>
-                      <p className="mt-4">You cannot apply for a new seat as you already have a room assignment.</p>
-                    </div>
-                  ) : allocationStatus === "room not assigned" ? (
-                    <div>
-                      <p className="mb-4">Your room has not been assigned yet.</p>
-                      <p className="text-blue-600 dark:text-blue-400">
-                        Please wait for the administration to assign rooms. You will be notified once your room is ready.
-                      </p>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="mb-4">The seat application function is currently not available for your account.</p>
-                      <p className="text-gray-500 dark:text-gray-400">
-                        Status: {allocationStatus || "Unknown"}
-                      </p>
-                      <p className="mt-4">
-                        Please contact the administration if you believe this is an error.
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-8">
-                  <button
-                    onClick={() => router.push("/studentscorner")}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
-                  >
-                    Return to Dashboard
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        </form>
+      </div>
+    ) : (
+      // Show message when student is not "attached"
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-yellow-200 dark:border-yellow-800 text-center">
+        <div className="flex items-center justify-center mb-6">
+          <XCircle className="h-16 w-16 text-yellow-500" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Application Not Available</h2>
+        <div className="space-y-4 text-lg text-gray-600 dark:text-gray-300">
+          {allocationStatus && allocationStatus.includes("room assigned to") ? (
+            <div>
+              <p className="mb-4">You have already been assigned a room.</p>
+              <p className="font-semibold text-green-600 dark:text-green-400">
+                {allocationStatus}
+              </p>
+              <p className="mt-4">You cannot apply for a new seat as you already have a room assignment.</p>
+            </div>
+          ) : allocationStatus === "room not assigned" ? (
+            <div>
+              <p className="mb-4">Your room has not been assigned yet.</p>
+              <p className="text-blue-600 dark:text-blue-400">
+                Please wait for the administration to assign rooms. You will be notified once your room is ready.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p className="mb-4">The seat application function is currently not available for your account.</p>
+              <p className="text-gray-500 dark:text-gray-400">
+                Status: {allocationStatus || "Unknown"}
+              </p>
+              <p className="mt-4">
+                Please contact the administration if you believe this is an error.
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="mt-8">
+          <button
+            onClick={() => router.push("/studentscorner")}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    )}
+  </>        )}
       </div>
     </div>
   )

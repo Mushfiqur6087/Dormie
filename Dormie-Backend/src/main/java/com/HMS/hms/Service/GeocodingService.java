@@ -46,6 +46,7 @@ public class GeocodingService {
     @SuppressWarnings({"java:S1181", "squid:S1181", "CatchAndPrintStackTrace", "UseSpecificCatch"})
     public double[] getCoordinatesFromPostcode(String postcode) {
         try {
+            logger.info("Geocoding postcode: {}", postcode);
             // Build the URL with query parameters safely
             URI uri = UriComponentsBuilder.fromUriString(nominatimBaseUrl)
                     .queryParam("postalcode", postcode)
@@ -55,6 +56,8 @@ public class GeocodingService {
                     .build()
                     .toUri();
 
+            logger.info("Making geocoding request to: {}", uri.toString());
+
             // Create headers with User-Agent
             HttpHeaders headers = new HttpHeaders();
             headers.set("User-Agent", userAgent);
@@ -62,10 +65,10 @@ public class GeocodingService {
 
             // Make the HTTP GET request
             // Use ParameterizedTypeReference to handle generic types properly
-            ParameterizedTypeReference<List<Map<String, String>>> responseType = 
-                new ParameterizedTypeReference<List<Map<String, String>>>() {};
+            ParameterizedTypeReference<List<Map<String, Object>>> responseType = 
+                new ParameterizedTypeReference<List<Map<String, Object>>>() {};
             
-            ResponseEntity<List<Map<String, String>>> responseEntity = restTemplate.exchange(
+            ResponseEntity<List<Map<String, Object>>> responseEntity = restTemplate.exchange(
                     uri,
                     HttpMethod.GET,
                     entity,
@@ -73,12 +76,14 @@ public class GeocodingService {
             );
 
             // Get the response body as a List of Maps
-            List<Map<String, String>> jsonResponse = responseEntity.getBody();
+            List<Map<String, Object>> jsonResponse = responseEntity.getBody();
+            
+            logger.info("Geocoding API response for postcode {}: {}", postcode, jsonResponse);
 
             if (jsonResponse != null && !jsonResponse.isEmpty()) {
-                Map<String, String> firstResult = jsonResponse.get(0);
-                double lat = Double.parseDouble(firstResult.get("lat"));
-                double lon = Double.parseDouble(firstResult.get("lon"));
+                Map<String, Object> firstResult = jsonResponse.get(0);
+                double lat = Double.parseDouble(firstResult.get("lat").toString());
+                double lon = Double.parseDouble(firstResult.get("lon").toString());
                 logger.info("Geocoded postcode {}: lat={}, lon={}", postcode, lat, lon);
                 return new double[]{lat, lon};
             } else {
@@ -128,15 +133,24 @@ public class GeocodingService {
      * @return Distance in kilometers, or null if geocoding fails for either postcode.
      */
     public Double calculateDistanceToHall(String studentPostcode) {
+        logger.info("Calculating distance to hall. Hall postcode: {}, Student postcode: {}", hallPostcode, studentPostcode);
+        
         double[] hallCoords = getCoordinatesFromPostcode(hallPostcode); // Get hall's coordinates
         double[] studentCoords = getCoordinatesFromPostcode(studentPostcode); // Get student's coordinates
 
+        logger.info("Hall coordinates: {}, Student coordinates: {}", 
+            hallCoords != null ? java.util.Arrays.toString(hallCoords) : "null",
+            studentCoords != null ? java.util.Arrays.toString(studentCoords) : "null");
+
         if (hallCoords != null && studentCoords != null) {
-            return calculateHaversineDistance(
+            double distance = calculateHaversineDistance(
                     hallCoords[0], hallCoords[1],
                     studentCoords[0], studentCoords[1]
             );
+            logger.info("Calculated distance: {} km", distance);
+            return distance;
         }
+        logger.warn("Unable to calculate distance - missing coordinates for hall or student postcode");
         return null; // Return null if coordinates couldn't be obtained for either location
     }
 }

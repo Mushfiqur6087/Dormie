@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import com.HMS.hms.Tables.StudentPaymentInfo;
 
 @Repository
-public interface StudentPaymentInfoRepo extends JpaRepository<StudentPaymentInfo, Long> {
+public interface StudentPaymentInfoRepo extends JpaRepository<StudentPaymentInfo,StudentPaymentInfo.PaymentInfoId> {
 
     // Find by feeId
     Optional<StudentPaymentInfo> findByFeeId(Long feeId);
