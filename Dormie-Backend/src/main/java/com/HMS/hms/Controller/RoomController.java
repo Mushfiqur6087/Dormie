@@ -433,6 +433,7 @@ public class RoomController {
                                     }
                                 } else {
                                     // Room no longer has space for 2 students, remove from available list
+                                    
                                     suitableRoom.setCurrentStudent(freshRoom.getCurrentStudent());
                                     if (!suitableRoom.hasSpace()) {
                                         availableRooms.remove(suitableRoom);
