@@ -3,20 +3,55 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User, FileText, DollarSign, LogOut, X, Menu, MessageSquare, AlertTriangle, Search, UserCheck, Home } from "lucide-react"
+import { User, FileText, DollarSign, LogOut, X, Menu, MessageSquare, AlertTriangle, Search, UserCheck, Home, ChefHat, UtensilsCrossed } from "lucide-react"
+import { createApiUrl } from "../../lib/api"
 
 export default function StudentsCorner({ children }) {
   const pathname = usePathname()
   const router = useRouter()
   const [userName, setUserName] = useState("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isActiveMessManager, setIsActiveMessManager] = useState(false)
+  const [checkingManagerStatus, setCheckingManagerStatus] = useState(true)
 
   useEffect(() => {
     const name = localStorage.getItem("userName")
     if (name) {
       setUserName(name)
     }
+    checkMessManagerStatus()
   }, [])
+
+  const checkMessManagerStatus = async () => {
+    const jwtToken = localStorage.getItem("jwtToken")
+    const studentId = localStorage.getItem("userId")
+
+    if (!jwtToken || !studentId) {
+      setCheckingManagerStatus(false)
+      return
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwtToken}`,
+    }
+
+    try {
+      const response = await fetch(createApiUrl(`/api/mess-manager-applications/is-active-manager/${studentId}`), {
+        method: "GET",
+        headers,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsActiveMessManager(data.isActiveManager || false)
+      }
+    } catch (err) {
+      console.error("Error checking mess manager status:", err)
+    } finally {
+      setCheckingManagerStatus(false)
+    }
+  }
 
   const handleLogout = () => {
     localStorage.removeItem("jwtToken")
@@ -27,7 +62,7 @@ export default function StudentsCorner({ children }) {
     router.push("/login")
   }
 
-  const menuItems = [
+  const baseMenuItems = [
     {
       href: "/studentscorner",
       label: "My Information",
@@ -47,6 +82,18 @@ export default function StudentsCorner({ children }) {
       active: pathname === "/studentscorner/mydues",
     },
     {
+      href: "/studentscorner/mess-manager-calls",
+      label: "Mess Manager Calls",
+      icon: ChefHat,
+      active: pathname === "/studentscorner/mess-manager-calls",
+    },
+    {
+      href: "/studentscorner/my-applications",
+      label: "My Applications",
+      icon: FileText,
+      active: pathname === "/studentscorner/my-applications",
+    },
+    {
       href: "/studentscorner/complaints",
       label: "All Complaints",
       icon: MessageSquare,
@@ -64,8 +111,20 @@ export default function StudentsCorner({ children }) {
       icon: Home,
       active: pathname === "/studentscorner/room-change",
     },
-
   ]
+
+  // Add mess manager specific menu items if the student is an active mess manager
+  const messManagerMenuItems = isActiveMessManager ? [
+    {
+      href: "/studentscorner/allocate-meals",
+      label: "Allocate Meals",
+      icon: UtensilsCrossed,
+      active: pathname === "/studentscorner/allocate-meals",
+    },
+  ] : []
+
+  // Combine base menu items with conditional mess manager items
+  const menuItems = [...baseMenuItems, ...messManagerMenuItems]
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -91,11 +150,19 @@ export default function StudentsCorner({ children }) {
         <div className="p-6 border-b border-red-700">
           <div className="flex items-center space-x-3">
             <div className="bg-red-600 w-12 h-12 rounded-full flex items-center justify-center">
-              <User className="h-6 w-6" />
+              {isActiveMessManager ? <ChefHat className="h-6 w-6" /> : <User className="h-6 w-6" />}
             </div>
             <div>
               <h3 className="font-semibold text-lg">Welcome</h3>
               <p className="text-red-200 text-sm">{userName || "Student"}</p>
+              {isActiveMessManager && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    <ChefHat className="h-3 w-3 mr-1" />
+                    Mess Manager
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User, FileText, DollarSign, Settings, LogOut, Menu, X, Crown, Home, MessageSquare } from "lucide-react"
+import { User, FileText, DollarSign, Settings, LogOut, Menu, X, Crown, Home, MessageSquare, ChefHat } from "lucide-react"
 
 export default function ProvostLayout({ children }) {
   const pathname = usePathname()
@@ -57,6 +57,18 @@ export default function ProvostLayout({ children }) {
       label: "Set Dining Fees",
       icon: Settings,
       active: pathname === "/authoritycorner/provost/setdiningfees",
+    },
+    {
+      href: "/authoritycorner/provost/call-mess-manager",
+      label: "Call Mess Manager",
+      icon: ChefHat,
+      active: pathname === "/authoritycorner/provost/call-mess-manager",
+    },
+    {
+      href: "/authoritycorner/provost/mess-manager-applications",
+      label: "Mess Manager Apps",
+      icon: ChefHat,
+      active: pathname === "/authoritycorner/provost/mess-manager-applications",
     },
     {
       href: "/authoritycorner/provost/setrooms",
