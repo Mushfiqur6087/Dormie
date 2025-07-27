@@ -33,6 +33,9 @@ export default function StudentDashboard() {
   const [allocationStatus, setAllocationStatus] = useState("")
   const [allocationLoading, setAllocationLoading] = useState(true)
   const [allocationError, setAllocationError] = useState(null)
+  const [todaysMeals, setTodaysMeals] = useState([])
+  const [mealsLoading, setMealsLoading] = useState(true)
+  const [mealsError, setMealsError] = useState(null)
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -115,6 +118,37 @@ export default function StudentDashboard() {
       setError("Failed to update information. Please try again.")
     } finally {
       setSaving(false)
+    }
+  }
+
+  // Function to fetch today's meals
+  const fetchTodaysMeals = async () => {
+    const jwtToken = localStorage.getItem("jwtToken")
+    if (!jwtToken) {
+      setMealsError("Authentication required")
+      setMealsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch(createApiUrl("/api/meal-plans/today"), {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      })
+
+      if (response.ok) {
+        const meals = await response.json()
+        setTodaysMeals(meals)
+        setMealsError(null)
+      } else {
+        setMealsError("Failed to fetch today's meals")
+      }
+    } catch (err) {
+      console.error("Error fetching today's meals:", err)
+      setMealsError("Failed to load today's meals")
+    } finally {
+      setMealsLoading(false)
     }
   }
 
@@ -398,6 +432,7 @@ export default function StudentDashboard() {
 
     fetchStudentInfo()
     fetchAllocationStatus()
+    fetchTodaysMeals()
   }, [])
 
   return (
@@ -605,6 +640,71 @@ export default function StudentDashboard() {
           Seat Allocation Status
         </h2>
         {renderAllocationMessage()}
+      </div>
+
+      {/* Today's Meal */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <svg className="h-6 w-6 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m-.4-2H1m6 13a2 2 0 100 4 2 2 0 000-4zm6 0a2 2 0 100 4 2 2 0 000-4z" />
+          </svg>
+          Today's Meal
+        </h2>
+        
+        {mealsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+            <span className="ml-2 text-gray-600 dark:text-gray-400">Loading today's meals...</span>
+          </div>
+        ) : mealsError ? (
+          <div className="flex items-center space-x-2 text-red-600">
+            <AlertCircle className="h-5 w-5" />
+            <span>{mealsError}</span>
+          </div>
+        ) : todaysMeals.length === 0 ? (
+          <div className="text-center py-8">
+            <svg className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 3h2l.4 2M7 13h10l4-8H5.4m-.4-2H1m6 13a2 2 0 100 4 2 2 0 000-4zm6 0a2 2 0 100 4 2 2 0 000-4z" />
+            </svg>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">No meals planned for today</p>
+            <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">The mess manager hasn't set today's meal plan yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {todaysMeals.map((meal, index) => (
+              <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize">
+                    {meal.mealType}
+                  </h3>
+                  <span className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-1 rounded-full text-sm font-medium">
+                    ৳{meal.costPerPerson}
+                  </span>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Menu Items:</p>
+                  <ul className="space-y-1">
+                    {meal.mealItems.map((item, itemIndex) => (
+                      <li key={itemIndex} className="flex items-center space-x-2">
+                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                        <span className="text-gray-900 dark:text-white">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                {meal.messManagerName && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Planned by: <span className="font-medium text-gray-900 dark:text-white">{meal.messManagerName}</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

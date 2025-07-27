@@ -17,7 +17,6 @@ import {
 } from "lucide-react"
 
 export default function AllocateMeals() {
-  const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -28,15 +27,13 @@ export default function AllocateMeals() {
     return today.toISOString().split('T')[0]
   })
 
-  // Meal types for the day
+  // Meal types for the day (removed breakfast as requested)
   const mealTypes = [
-    { id: 'breakfast', name: 'Breakfast', time: '8:00 AM - 10:00 AM' },
     { id: 'lunch', name: 'Lunch', time: '12:00 PM - 2:00 PM' },
     { id: 'dinner', name: 'Dinner', time: '7:00 PM - 9:00 PM' }
   ]
 
   const [mealPlans, setMealPlans] = useState({
-    breakfast: { items: [''], cost: 0 },
     lunch: { items: [''], cost: 0 },
     dinner: { items: [''], cost: 0 }
   })
@@ -64,16 +61,47 @@ export default function AllocateMeals() {
     }
 
     try {
-      // For now, we'll use a mock implementation
-      // In a real app, you'd fetch existing meal plans for the date
-      setMealPlans({
-        breakfast: { items: [''], cost: 0 },
-        lunch: { items: [''], cost: 0 },
-        dinner: { items: [''], cost: 0 }
+      // Fetch existing meal plans for the selected date
+      const response = await fetch(createApiUrl(`/api/meal-plans/date/${selectedDate}`), {
+        method: "GET",
+        headers,
       })
+
+      if (response.ok) {
+        const existingPlans = await response.json()
+        
+        // Initialize meal plans
+        const newMealPlans = {
+          lunch: { items: [''], cost: 0 },
+          dinner: { items: [''], cost: 0 }
+        }
+
+        // Populate with existing data if available
+        existingPlans.forEach(plan => {
+          if (plan.mealType === 'lunch' || plan.mealType === 'dinner') {
+            newMealPlans[plan.mealType] = {
+              items: plan.mealItems && plan.mealItems.length > 0 ? plan.mealItems : [''],
+              cost: plan.costPerPerson || 0
+            }
+          }
+        })
+
+        setMealPlans(newMealPlans)
+      } else {
+        // If no existing plans, use default empty structure
+        setMealPlans({
+          lunch: { items: [''], cost: 0 },
+          dinner: { items: [''], cost: 0 }
+        })
+      }
     } catch (err) {
       console.error("Error fetching meal plans:", err)
       setError("Failed to fetch meal plans. Please try again.")
+      // Use default structure on error
+      setMealPlans({
+        lunch: { items: [''], cost: 0 },
+        dinner: { items: [''], cost: 0 }
+      })
     } finally {
       setLoading(false)
     }
@@ -133,8 +161,8 @@ export default function AllocateMeals() {
       return
     }
 
-    // Validate meal plans
-    const hasValidMeals = Object.values(mealPlans).some(meal => 
+    // Validate meal plans - at least one meal should have items and cost
+    const hasValidMeals = Object.entries(mealPlans).some(([mealType, meal]) => 
       meal.items.some(item => item.trim().length > 0) && meal.cost > 0
     )
 
@@ -150,26 +178,54 @@ export default function AllocateMeals() {
     }
 
     try {
-      // For now, we'll simulate saving
-      // In a real app, you'd send this data to your backend
-      const mealData = {
-        date: selectedDate,
-        managerId: studentId,
-        meals: mealPlans
-      }
+      // Save each meal type separately
+      const savePromises = Object.entries(mealPlans).map(async ([mealType, meal]) => {
+        // Only save meals that have items and cost
+        const validItems = meal.items.filter(item => item.trim().length > 0)
+        if (validItems.length === 0 || meal.cost <= 0) {
+          return null // Skip this meal
+        }
 
-      console.log("Saving meal plans:", mealData)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setSuccess(`Meal plans for ${selectedDate} saved successfully!`)
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(""), 3000)
+        const mealData = {
+          messManagerId: parseInt(studentId),
+          mealDate: selectedDate,
+          mealType: mealType,
+          costPerPerson: parseFloat(meal.cost),
+          mealItems: validItems
+        }
+
+        const response = await fetch(createApiUrl("/api/meal-plans"), {
+          method: "POST",
+          headers,
+          body: JSON.stringify(mealData),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || `Failed to save ${mealType}`)
+        }
+
+        return await response.json()
+      })
+
+      // Wait for all saves to complete
+      const results = await Promise.all(savePromises)
+      const successfulSaves = results.filter(result => result !== null)
+
+      if (successfulSaves.length > 0) {
+        setSuccess(`Meal plans for ${selectedDate} saved successfully! (${successfulSaves.length} meal(s) saved)`)
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccess(""), 3000)
+        
+        // Refresh the data
+        fetchMealPlans()
+      } else {
+        setError("No valid meals to save. Please ensure at least one meal has items and cost.")
+      }
     } catch (err) {
       console.error("Error saving meal plans:", err)
-      setError("Failed to save meal plans. Please try again.")
+      setError(err.message || "Failed to save meal plans. Please try again.")
     } finally {
       setSaving(false)
     }
