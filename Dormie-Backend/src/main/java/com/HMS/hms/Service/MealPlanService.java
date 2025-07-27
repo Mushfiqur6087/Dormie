@@ -2,6 +2,7 @@ package com.HMS.hms.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -31,10 +32,26 @@ public class MealPlanService {
 
     // DTO Conversion Methods
     public MealPlanDTO convertToDTO(MealPlan mealPlan) {
-        List<String> itemNames = mealPlan.getMealItems().stream()
-                .sorted((a, b) -> a.getItemOrder().compareTo(b.getItemOrder()))
-                .map(MealItem::getItemName)
-                .collect(Collectors.toList());
+        List<String> itemNames;
+        
+        // Always ensure we have a non-null mealItems list
+        if (mealPlan.getMealItems() != null && !mealPlan.getMealItems().isEmpty()) {
+            itemNames = mealPlan.getMealItems().stream()
+                    .sorted((a, b) -> a.getItemOrder().compareTo(b.getItemOrder()))
+                    .map(MealItem::getItemName)
+                    .collect(Collectors.toList());
+        } else {
+            // If mealItems is null or empty, fetch them from repository
+            if (mealPlan.getMealPlanId() != null) {
+                List<MealItem> mealItems = mealItemRepo.findByMealPlanMealPlanIdOrderByItemOrder(mealPlan.getMealPlanId());
+                itemNames = mealItems.stream()
+                        .map(MealItem::getItemName)
+                        .collect(Collectors.toList());
+            } else {
+                // For new meal plans without ID, return empty list
+                itemNames = List.of();
+            }
+        }
 
         return new MealPlanDTO(
                 mealPlan.getMealPlanId(),
@@ -54,7 +71,7 @@ public class MealPlanService {
 
     // Validate if user is an active mess manager
     private void validateMessManager(Long userId) {
-        boolean isActiveManager = messManagerApplicationRepo.isStudentCurrentlyMessManager(userId);
+        boolean isActiveManager = messManagerApplicationRepo.isStudentCurrentlyMessManager(userId, LocalDate.now());
         if (!isActiveManager) {
             throw new IllegalArgumentException("User is not an active mess manager");
         }
@@ -120,14 +137,25 @@ public class MealPlanService {
         mealPlan = mealPlanRepo.save(mealPlan);
 
         // Create meal items
+        List<MealItem> createdItems = new ArrayList<>();
         for (int i = 0; i < validItems.size(); i++) {
             MealItem mealItem = new MealItem(mealPlan, validItems.get(i).trim(), i + 1);
-            mealItemRepo.save(mealItem);
+            MealItem savedItem = mealItemRepo.save(mealItem);
+            createdItems.add(savedItem);
         }
 
-        // Reload meal plan with items
-        mealPlan = mealPlanRepo.findById(mealPlan.getMealPlanId()).orElse(mealPlan);
-        return convertToDTO(mealPlan);
+        // Set the meal items directly to avoid lazy loading issues
+        mealPlan.setMealItems(createdItems);
+        
+        // Return DTO without reloading from database
+        return new MealPlanDTO(
+                mealPlan.getMealPlanId(),
+                mealPlan.getMessManagerId(),
+                mealPlan.getMealDate(),
+                mealPlan.getMealTypeAsString(),
+                mealPlan.getCostPerPerson(),
+                validItems
+        );
     }
 
     // Get meal plans by date

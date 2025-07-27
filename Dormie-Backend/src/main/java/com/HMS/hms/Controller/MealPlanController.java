@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +23,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.HMS.hms.DTO.MealPlanDTO;
+import com.HMS.hms.Security.UserDetailsImpl;
 import com.HMS.hms.Service.MealPlanService;
+import com.HMS.hms.Service.StudentsService;
+import com.HMS.hms.Service.UserService;
+import com.HMS.hms.Tables.Students;
+import com.HMS.hms.Tables.Users;
 
 @RestController
 @RequestMapping("/api/meal-plans")
@@ -30,6 +37,12 @@ public class MealPlanController {
 
     @Autowired
     private MealPlanService mealPlanService;
+
+    @Autowired
+    private StudentsService studentsService;
+
+    @Autowired
+    private UserService userService;
 
     // Create or update meal plan (Mess Manager only)
     @PostMapping
@@ -48,8 +61,14 @@ public class MealPlanController {
 
     // Get all meal plans (Admin view)
     @GetMapping
-    public ResponseEntity<List<MealPlanDTO>> getAllMealPlans() {
+    public ResponseEntity<?> getAllMealPlans() {
         try {
+            // Check if user is a resident student
+            if (!isResidentStudent()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Only resident students can access meal plans"));
+            }
+            
             // Get all future meals for general viewing
             List<MealPlanDTO> mealPlans = mealPlanService.getFutureMeals();
             return ResponseEntity.ok(mealPlans);
@@ -60,8 +79,14 @@ public class MealPlanController {
 
     // Get today's meals (Public access for all students)
     @GetMapping("/today")
-    public ResponseEntity<List<MealPlanDTO>> getTodaysMeals() {
+    public ResponseEntity<?> getTodaysMeals() {
         try {
+            // Check if user is a resident student
+            if (!isResidentStudent()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Only resident students can access meal plans"));
+            }
+            
             List<MealPlanDTO> todaysMeals = mealPlanService.getTodaysMeals();
             return ResponseEntity.ok(todaysMeals);
         } catch (Exception e) {
@@ -73,6 +98,11 @@ public class MealPlanController {
     @GetMapping("/date/{date}")
     public ResponseEntity<List<MealPlanDTO>> getMealPlansByDate(@PathVariable String date) {
         try {
+            // Check if the user is a resident student
+            if (!isResidentStudent()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
             LocalDate mealDate = LocalDate.parse(date);
             List<MealPlanDTO> mealPlans = mealPlanService.getMealPlansByDate(mealDate);
             return ResponseEntity.ok(mealPlans);
@@ -87,6 +117,11 @@ public class MealPlanController {
             @RequestParam String startDate,
             @RequestParam String endDate) {
         try {
+            // Check if the user is a resident student
+            if (!isResidentStudent()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
             LocalDate start = LocalDate.parse(startDate);
             LocalDate end = LocalDate.parse(endDate);
             List<MealPlanDTO> mealPlans = mealPlanService.getMealPlansByDateRange(start, end);
@@ -183,10 +218,44 @@ public class MealPlanController {
     @GetMapping("/future")
     public ResponseEntity<List<MealPlanDTO>> getFutureMeals() {
         try {
+            // Check if the user is a resident student
+            if (!isResidentStudent()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
             List<MealPlanDTO> futureMeals = mealPlanService.getFutureMeals();
             return ResponseEntity.ok(futureMeals);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Helper method to check if the current user is a resident student
+    private boolean isResidentStudent() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return false;
+            }
+
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            String email = userDetails.getEmail();
+
+            Optional<Users> userOpt = userService.findByEmail(email);
+            if (userOpt.isEmpty()) {
+                return false;
+            }
+
+            Users user = userOpt.get();
+            Optional<Students> studentOpt = studentsService.findByUserId(user.getUserId());
+            if (studentOpt.isEmpty()) {
+                return false;
+            }
+
+            Students student = studentOpt.get();
+            return "resident".equals(student.getResidencyStatus());
+        } catch (Exception e) {
+            return false;
         }
     }
 }

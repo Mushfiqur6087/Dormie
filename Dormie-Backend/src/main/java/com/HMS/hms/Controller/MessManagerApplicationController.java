@@ -7,6 +7,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,8 +18,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.HMS.hms.Security.UserDetailsImpl;
 import com.HMS.hms.Service.MessManagerApplicationService;
+import com.HMS.hms.Service.StudentsService;
+import com.HMS.hms.Service.UserService;
 import com.HMS.hms.Tables.MessManagerApplication;
+import com.HMS.hms.Tables.Students;
+import com.HMS.hms.Tables.Users;
 
 @RestController
 @RequestMapping("/api/mess-manager-applications")
@@ -27,10 +34,22 @@ public class MessManagerApplicationController {
     @Autowired
     private MessManagerApplicationService applicationService;
 
+    @Autowired
+    private StudentsService studentsService;
+
+    @Autowired
+    private UserService userService;
+
     // Student applies for mess manager position
     @PostMapping("/apply")
     public ResponseEntity<?> applyForPosition(@RequestBody Map<String, Object> request) {
         try {
+            // Check if user is a resident student
+            if (!isResidentStudent()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Only resident students can apply for mess manager positions"));
+            }
+            
             Long callId = Long.valueOf(request.get("callId").toString());
             Long studentId = Long.valueOf(request.get("studentId").toString());
             String reason = request.get("reason").toString();
@@ -177,5 +196,29 @@ public class MessManagerApplicationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to check mess manager status"));
         }
+    }
+
+    // Helper method to validate if user is a resident student
+    private boolean isResidentStudent() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl) {
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            String email = userDetails.getEmail();
+            
+            // Find user by email
+            Optional<Users> userOpt = userService.findByEmail(email);
+            if (userOpt.isPresent()) {
+                Users user = userOpt.get();
+                // Check if user is a student and has resident status
+                if ("STUDENT".equals(user.getRole())) {
+                    Optional<Students> studentOpt = studentsService.findByUserId(user.getUserId());
+                    if (studentOpt.isPresent()) {
+                        Students student = studentOpt.get();
+                        return "resident".equals(student.getResidencyStatus());
+                    }
+                }
+            }
+        }
+        return false;
     }
 }

@@ -46,8 +46,11 @@ public interface MessManagerApplicationRepo extends JpaRepository<MessManagerApp
     int updateAcceptedToMonthEnd(@Param("callId") Long callId);
 
     // Check if student has any accepted application (is currently a mess manager)
-    @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM MessManagerApplication m WHERE m.studentId = :studentId AND m.status = 'ACCEPTED'")
-    boolean isStudentCurrentlyMessManager(@Param("studentId") Long studentId);
+    @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM MessManagerApplication m " +
+           "JOIN MessManagerCall c ON m.callId = c.callId " +
+           "WHERE m.studentId = :studentId AND m.status = 'ACCEPTED' " +
+           "AND :currentDate >= c.managerActivityStartDate AND :currentDate <= c.managerActivityEndDate")
+    boolean isStudentCurrentlyMessManager(@Param("studentId") Long studentId, @Param("currentDate") java.time.LocalDate currentDate);
 
     // Get applications with student and call information (for detailed view)
     @Query("SELECT m FROM MessManagerApplication m WHERE m.callId = :callId ORDER BY m.createdAt DESC")
