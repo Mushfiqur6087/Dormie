@@ -87,6 +87,13 @@ export default function AllocateMeals() {
         })
 
         setMealPlans(newMealPlans)
+      } else if (response.status === 403) {
+        setError("Meal planning is only available for resident students. Please contact the administration if you need to change your residency status.")
+        // Use default structure on access denied
+        setMealPlans({
+          lunch: { items: [''], cost: 0 },
+          dinner: { items: [''], cost: 0 }
+        })
       } else {
         // If no existing plans, use default empty structure
         setMealPlans({
@@ -96,7 +103,11 @@ export default function AllocateMeals() {
       }
     } catch (err) {
       console.error("Error fetching meal plans:", err)
-      setError("Failed to fetch meal plans. Please try again.")
+      if (err.message && err.message.includes("resident students")) {
+        setError(err.message)
+      } else {
+        setError("Failed to fetch meal plans. Please try again.")
+      }
       // Use default structure on error
       setMealPlans({
         lunch: { items: [''], cost: 0 },
@@ -200,7 +211,9 @@ export default function AllocateMeals() {
           body: JSON.stringify(mealData),
         })
 
-        if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error("Meal planning is only available for resident students. Please contact the administration if you need to change your residency status.")
+        } else if (!response.ok) {
           const errorData = await response.json()
           throw new Error(errorData.message || `Failed to save ${mealType}`)
         }
