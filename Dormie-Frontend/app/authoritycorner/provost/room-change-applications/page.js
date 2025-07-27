@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { toast } from '@/hooks/use-toast'
+import { createApiUrl } from '../../../../lib/api'
 import { Calendar, User, MapPin, FileText, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react'
 
 export default function RoomChangeApplicationsPage() {
@@ -25,7 +26,7 @@ export default function RoomChangeApplicationsPage() {
       setLoading(true)
       const token = localStorage.getItem('jwtToken')
       
-      const response = await fetch('http://localhost:8080/api/room-change/all', {
+      const response = await fetch(createApiUrl('/api/room-change/all'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -60,7 +61,7 @@ export default function RoomChangeApplicationsPage() {
       setProcessingId(applicationId)
       const token = localStorage.getItem('jwtToken')
       
-      const response = await fetch(`http://localhost:8080/api/room-change/approve/${applicationId}`, {
+      const response = await fetch(createApiUrl(`/api/room-change/approve/${applicationId}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -100,7 +101,7 @@ export default function RoomChangeApplicationsPage() {
       setProcessingId(applicationId)
       const token = localStorage.getItem('jwtToken')
       
-      const response = await fetch(`http://localhost:8080/api/room-change/reject/${applicationId}`, {
+      const response = await fetch(createApiUrl(`/api/room-change/reject/${applicationId}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

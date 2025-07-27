@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { toast } from '@/hooks/use-toast'
+import { createApiUrl } from '../../../lib/api'
 import { Home, MapPin, FileText, Calendar, CheckCircle, XCircle, Clock, Loader2, Send, Trash2 } from 'lucide-react'
 
 export default function RoomChangePage() {
@@ -34,7 +35,7 @@ export default function RoomChangePage() {
     try {
       const token = localStorage.getItem('jwtToken')
       
-      const response = await fetch('http://localhost:8080/api/rooms/my-current-room', {
+      const response = await fetch(createApiUrl('/api/rooms/my-current-room'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -63,7 +64,7 @@ export default function RoomChangePage() {
       const token = localStorage.getItem('jwtToken')
       console.log('JWT Token exists:', !!token)
       
-      const response = await fetch('http://localhost:8080/api/room-change/my-application', {
+      const response = await fetch(createApiUrl('/api/room-change/my-application'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -120,7 +121,7 @@ export default function RoomChangePage() {
     try {
       const token = localStorage.getItem('jwtToken')
       
-      const response = await fetch('http://localhost:8080/api/rooms/available-for-change', {
+      const response = await fetch(createApiUrl('/api/rooms/available-for-change'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -165,9 +166,9 @@ export default function RoomChangePage() {
       }
       
       console.log('Request body:', requestBody)
-      console.log('Submitting to: http://localhost:8080/api/room-change/apply')
+      console.log('Submitting to:', createApiUrl('/api/room-change/apply'))
       
-      const response = await fetch('http://localhost:8080/api/room-change/apply', {
+      const response = await fetch(createApiUrl('/api/room-change/apply'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -233,7 +234,7 @@ export default function RoomChangePage() {
       setCancelling(true)
       const token = localStorage.getItem('jwtToken')
       
-      const response = await fetch('http://localhost:8080/api/room-change/cancel', {
+      const response = await fetch(createApiUrl('/api/room-change/cancel'), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
