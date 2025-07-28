@@ -55,15 +55,19 @@ export default function MessManagerCalls() {
         headers,
       })
 
-      if (!response.ok) {
+      if (response.ok) {
+        const data = await response.json()
+        setCalls(data || [])
+      } else if (response.status === 403) {
+        setError("Mess manager applications are only available for resident students. Please contact the administration if you need to change your residency status.")
+      } else {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-
-      const data = await response.json()
-      setCalls(data || [])
     } catch (err) {
       console.error("Error fetching mess manager calls:", err)
-      setError("Failed to fetch mess manager calls. Please try again.")
+      if (!error) { // Only set generic error if we haven't already set a specific one
+        setError("Failed to fetch mess manager calls. Please try again.")
+      }
     } finally {
       setLoading(false)
     }
@@ -117,8 +121,8 @@ export default function MessManagerCalls() {
       return
     }
 
-    if (applicationReason.trim().length < 100) {
-      setApplicationMessage("Reason must be at least 100 characters long.")
+    if (applicationReason.trim().length > 100) {
+      setApplicationMessage("Reason must be at most 100 characters long.")
       return
     }
 
@@ -430,19 +434,29 @@ export default function MessManagerCalls() {
                   <textarea
                     value={applicationReason}
                     onChange={(e) => setApplicationReason(e.target.value)}
-                    placeholder="Please provide a detailed reason for your application (minimum 100 characters)..."
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white resize-none"
+                    placeholder="Please provide a detailed reason for your application (maximum 100 characters)..."
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white resize-none ${
+                      applicationReason.length > 100
+                        ? 'border-red-500 dark:border-red-400'
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
                     rows={8}
                     disabled={submittingApplication}
                   />
                   <div className="flex justify-between items-center mt-2">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {applicationReason.length}/100 characters minimum
+                      {applicationReason.length}/100 characters maximum
                     </p>
-                    {applicationReason.length >= 100 && (
+                    {applicationReason.length <= 100 && applicationReason.length > 0 && (
                       <span className="text-sm text-green-600 dark:text-green-400 flex items-center">
                         <CheckCircle className="h-4 w-4 mr-1" />
-                        Minimum length met
+                        Within character limit
+                      </span>
+                    )}
+                    {applicationReason.length > 100 && (
+                      <span className="text-sm text-red-600 dark:text-red-400 flex items-center">
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Exceeds character limit
                       </span>
                     )}
                   </div>
@@ -478,7 +492,7 @@ export default function MessManagerCalls() {
                 </button>
                 <button
                   onClick={submitApplication}
-                  disabled={submittingApplication || applicationReason.trim().length < 100}
+                  disabled={submittingApplication || applicationReason.trim().length > 100 || applicationReason.trim().length === 0}
                   className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold rounded-lg transition-colors duration-200 flex items-center space-x-2"
                 >
                   <Send className="h-4 w-4" />

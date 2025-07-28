@@ -3,6 +3,7 @@ package com.HMS.hms.Tables;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -83,6 +84,7 @@ public class MealPlan {
     // Default constructor
     public MealPlan() {
         this.createdAt = LocalDateTime.now();
+        this.mealItems = new ArrayList<>();
     }
 
     // Constructor with parameters
@@ -92,6 +94,7 @@ public class MealPlan {
         this.mealType = mealType;
         this.costPerPerson = costPerPerson;
         this.createdAt = LocalDateTime.now();
+        this.mealItems = new ArrayList<>();
     }
 
     // Getters and Setters
@@ -160,6 +163,9 @@ public class MealPlan {
     }
 
     public List<MealItem> getMealItems() {
+        if (mealItems == null) {
+            mealItems = new ArrayList<>();
+        }
         return mealItems;
     }
 

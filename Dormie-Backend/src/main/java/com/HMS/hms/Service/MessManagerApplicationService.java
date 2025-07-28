@@ -1,5 +1,6 @@
 package com.HMS.hms.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,8 +42,8 @@ public class MessManagerApplicationService {
         }
 
         // Validate: Reason length
-        if (reason == null || reason.trim().length() < 100) {
-            throw new IllegalArgumentException("Reason must be at least 100 characters");
+        if (reason == null || reason.trim().length() > 100) {
+            throw new IllegalArgumentException("Reason must be at most 100 characters");
         }
 
         // Create and save application
@@ -58,7 +59,7 @@ public class MessManagerApplicationService {
         }
 
         // Check if student is currently an active mess manager
-        return !messManagerApplicationRepo.isStudentCurrentlyMessManager(studentId);
+        return !messManagerApplicationRepo.isStudentCurrentlyMessManager(studentId, LocalDate.now());
     }
 
     // Get applications for a call (Provost view)
@@ -137,7 +138,6 @@ public class MessManagerApplicationService {
 
     // Check if student is currently an active mess manager
     public boolean isStudentActiveMessManager(Long studentId) {
-        List<MessManagerApplication> acceptedApplications = messManagerApplicationRepo.findByStudentIdAndStatus(studentId, MessManagerApplication.ApplicationStatus.ACCEPTED);
-        return !acceptedApplications.isEmpty();
+        return messManagerApplicationRepo.isStudentCurrentlyMessManager(studentId, LocalDate.now());
     }
 }

@@ -141,6 +141,8 @@ export default function StudentDashboard() {
         const meals = await response.json()
         setTodaysMeals(meals)
         setMealsError(null)
+      } else if (response.status === 403) {
+        setMealsError("Meal section is only available for resident students. Please contact the administration if you need to change your residency status.")
       } else {
         setMealsError("Failed to fetch today's meals")
       }
