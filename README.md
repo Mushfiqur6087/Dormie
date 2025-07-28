@@ -70,42 +70,6 @@ Dormie is a comprehensive Hall Management System designed to streamline and auto
 
         docker compose -f docker-compose.dev.yml down
     
-
-### Manual Setup
-
-#### Backend (Spring Boot)
-
-1. Navigate to the backend directory:
-        cd backend
-    
-2. Configure your database in application.properties.
-3. Build and run:
-        mvn clean install
-    mvn spring-boot:run
-    
-
-#### Frontend (Next.js)
-
-1. Navigate to the frontend directory:
-        cd frontend
-    
-2. Install dependencies:
-        npm install
-    
-3. Start the development server:
-        npm run dev
-    
-
----
-
-## Project Structure
-
-Dormie/
-├── backend/        # Spring Boot API
-├── frontend/       # Next.js frontend
-├── docker-compose.yml
-└── README.md
-
 ---
 
 
