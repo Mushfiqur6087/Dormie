@@ -50,6 +50,9 @@ export default function CallMessManager() {
   useEffect(() => {
     fetchDiningFees()
     fetchExistingCalls()
+    
+    // Debug: Test basic connectivity
+    testConnectivity()
   }, [])
 
   // Auto-fill dates and year when dining fee is selected
@@ -63,6 +66,45 @@ export default function CallMessManager() {
       }
     }
   }, [selectedDiningFeeId, diningFees, setValue])
+
+  const testConnectivity = async () => {
+    console.log("=== CONNECTIVITY TEST ===")
+    console.log("Current environment:", process.env.NODE_ENV)
+    console.log("API Base URL from createApiUrl:", createApiUrl(""))
+    console.log("Testing basic API connectivity...")
+    
+    const jwtToken = localStorage.getItem("jwtToken")
+    if (!jwtToken) {
+      console.log("No JWT token found")
+      return
+    }
+    
+    try {
+      // Test a simple endpoint first
+      const testUrl = createApiUrl("/api/auth/verify")
+      console.log("Testing connectivity to:", testUrl)
+      
+      const response = await fetch(testUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      })
+      
+      console.log("Connectivity test response status:", response.status)
+      console.log("Connectivity test response headers:", Object.fromEntries(response.headers.entries()))
+      
+      if (response.ok) {
+        console.log("✅ Basic connectivity is working")
+      } else {
+        console.log("❌ Basic connectivity failed")
+      }
+    } catch (error) {
+      console.error("❌ Connectivity test failed with error:", error)
+    }
+    console.log("=== END CONNECTIVITY TEST ===")
+  }
 
   const fetchDiningFees = async () => {
     setDiningFeesLoading(true)
@@ -118,19 +160,35 @@ export default function CallMessManager() {
     }
 
     try {
-      const response = await fetch(createApiUrl("/api/mess-manager-calls"), {
+      const apiUrl = createApiUrl("/api/mess-manager-calls")
+      console.log("Fetching mess manager calls from:", apiUrl)
+      console.log("Environment:", process.env.NODE_ENV)
+      console.log("Headers:", headers)
+      
+      const response = await fetch(apiUrl, {
         method: "GET",
         headers,
       })
 
+      console.log("Response status:", response.status)
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()))
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text()
+        console.error("Response error text:", errorText)
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
+      console.log("Fetched calls data:", data)
       setExistingCalls(data || [])
     } catch (err) {
       console.error("Error fetching mess manager calls:", err)
+      console.error("Error details:", {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+      })
       setCallsError("Failed to fetch existing calls. Please try again.")
     } finally {
       setCallsLoading(false)
@@ -193,16 +251,26 @@ export default function CallMessManager() {
     }
 
     try {
-      const response = await fetch(createApiUrl("/api/mess-manager-calls"), {
+      const apiUrl = createApiUrl("/api/mess-manager-calls")
+      console.log("Creating mess manager call at:", apiUrl)
+      console.log("Environment:", process.env.NODE_ENV)
+      console.log("Payload:", payload)
+      console.log("Headers:", headers)
+      
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
       })
 
+      console.log("Create response status:", response.status)
+      console.log("Create response headers:", Object.fromEntries(response.headers.entries()))
+
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`
         try {
           const responseText = await response.text()
+          console.error("Create response error text:", responseText)
           // Try to parse as JSON first
           try {
             const errorData = JSON.parse(responseText)
@@ -218,6 +286,7 @@ export default function CallMessManager() {
       }
 
       const result = await response.json()
+      console.log("Create result:", result)
       setMessage("Mess Manager Call created successfully!")
       reset()
       fetchExistingCalls() // Refresh the list

@@ -133,3 +133,10 @@ pids
 # .env.development.local
 # .env.test.local
 # .env.production.local
+
+# Excel temporary files
+~$*.xlsx
+~$*.xls
+~$*.doc*
+~$*.ppt*
+*.tmp
